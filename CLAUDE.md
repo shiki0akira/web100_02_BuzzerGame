@@ -1,0 +1,60 @@
+# web100_02_BuzzerGame
+
+現場搶答工具，Web100 系列第二個專案。主持人建房、其他人掃 QR code 加入、按鈕搶答即時排名。
+
+系列整體架構（子路徑策略、網址結構規則、共用 design tokens、repo 命名）在 `web100_00_Homepage` repo 的 `ARCHITECTURE.md`。這裡只記跟這個專案直接相關的事。
+
+## 跟規格文件的差異
+
+原始規格是 Google Doc「現場搶答遊戲 Web App - 開發規格文件」。以下三處刻意沒有照做：
+
+- **§4.1 說前端放 Cloudflare Pages、後端另開一個 Worker**，這裡改成**單一 Worker 同時服務靜態檔與 Durable Object**（`wrangler.jsonc` 的 assets binding）。Pages 現在等同 Workers，多切一層只是多一個部署目標，而且靜態頁與 WebSocket 同源、不用處理 CORS
+- **§6 說搶答要「帶上 Firebase server timestamp」**，那是舊版架構的殘留。Durable Object 是單執行緒，排名直接用**收到訊息的先後順序**，不比對任何 timestamp。`buzzOrder` 裡的 `timestamp` / `ms` 只拿來顯示「第 2 名慢了 0.3 秒」，不參與排序
+- **§8 列為待確認的「主持人重整會不會掉身份」**，已經做掉：`clientId` 存在 localStorage，重新連線送 `hello` 時由 DO 比對 `hostId`，重整後仍是主持人
+
+## 部署
+
+- Cloudflare Workers（不是 Vercel）。需要 WebSocket 長連線，Vercel 的 serverless function 撐不住，這是 `ARCHITECTURE.md` 第 4 節就定好的分流
+- `npm run dev` = 先 build 再 `wrangler dev`；`npm run deploy` 同理
+- `dist/` 是建置產物，不進版控。**Windows 上 `wrangler dev` 開著時會鎖住 `dist/`**，所以 `scripts/build.js` 的清空步驟遇到 EBUSY/EPERM 會警告後繼續覆寫，不讓 build 失敗
+- 正式網域接進來的方式跟阿瓦隆一樣：先由 `web100_00_Homepage` 的 `vercel.json` rewrite `/buzzer/*` 代理過來，之後改由 Cloudflare Worker 路由總機接管
+
+## 這個 Worker 只擁有 `/buzzer/*`
+
+正式網域上其他路徑根本不會進到這個 Worker，所以**所有東西都要待在 `/buzzer/` 底下**——API、favicon、vendor script 都是。要加新路徑時記得帶上這個前綴，不然本機測得到、上線就 404。
+
+- `/buzzer/api/rooms`（POST）建房、`/buzzer/api/rooms/:code`（GET）查存在、`/buzzer/api/rooms/:code/ws` 升級 WebSocket
+- `/buzzer/` 沒帶語言時由 Worker 依 `web100_lang` cookie → `Accept-Language` → `zh-TW` 轉址
+
+## 房間狀態（`src/room.js`）
+
+一個房間 = 一個 Durable Object（`idFromName(code)`）。狀態機 `waiting → question_shown → buzzing → buzzed`，重置回 `waiting`。
+
+- **WebSocket 用 Hibernation API**（`ctx.acceptWebSocket`），沒訊息時 DO 可以被卸載。代價是喚醒後記憶體會清空，所以**每次改動都要寫回 storage**，連線身分要放進 `serializeAttachment`，不能只存在 instance 欄位裡
+- `saveRoom({ touch: true })` 才會把閒置清除的鬧鐘往後推。**搶答本身刻意不 touch**：一輪搶答前面一定有主持人的動作推過鬧鐘，替最需要低延遲的路徑多寫一次 alarm 不划算
+- 玩家斷線**不從名單移除**，只標記離線。手機鎖屏、切 App 都會觸發 close，踢掉會讓主持人的名單一直跳
+- 同一個 `clientId` 開多個分頁不特別處理：online 是 Set 會收斂，搶答用 playerId 去重。刻意不去關「舊的」那條連線——在重整與背景喚醒的情境下很容易誤殺還在用的
+
+## 前端（`app/`）
+
+沒有 bundler。四個畫面都在同一份 HTML 裡靠 `showView()` 切換，房間代碼放查詢字串 `?room=XXXX`（QR code 掃進來就是這個網址）。
+
+- **文案唯一來源是 `app/strings.js`**。`scripts/build.js` 用它替換 `template.html` 的 `{{token}}`，每個語言各產生一份靜態頁，同時把該語言內嵌成 `window.T`。對不到值的 token 會**直接讓 build 失敗**，不會靜靜產出半空的頁面；語言之間 key 少了或多了也會擋下來
+- 加語言＝`LANGS` 加代碼 + `STRINGS` 加一份 + `LOCALE_LABELS` 加名字，其他都自動（hreflang、sitemap、下拉選單）
+- 「我是主持人還是玩家」**不由前端決定**，一律等 DO 在 `welcome` 裡回答
+- 主持人的題目輸入框只在連上線後同步**一次**（`questionSynced`）。每次廣播都覆寫的話，會把他正在打的字和游標位置洗掉
+- 搶答鍵綁 `pointerdown` 而不是 `click`：click 要等 pointerup，搶答差的就是這幾十毫秒。鍵盤操作另外用 `click` 且 `event.detail === 0` 補上
+- QR code 只在網址變的時候重畫，否則每次廣播主持人畫面都會閃
+
+## 配色 / UI
+
+色票、圓角、間距全部來自 `https://www.vibeweb100.com/design-tokens.css`（外部引用，**不要把變數複製進這個 repo**）。`app.css` 裡不寫死 hex，唯一例外是 QR code 的白底——掃描率優先，深色模式反白會有相機讀不到。
+
+- 深淺色用 `<html class="light">` 表示淺色，深色是預設值。class 掛在 `<html>` 而不是 `<body>`：決定主題那段 script 在 `<head>` 就要跑完，那時 `<body>` 還不存在
+- 導覽列刻意做成跟阿瓦隆一樣：品牌圓鈕 + 標題 + 語言下拉（`<select>`，顯示語言自己的名字）+ 主題圓鈕，寬 600、高 40 的控制項
+- 按鈕的立體／壓扁語言、disabled 的配色都照 `ARCHITECTURE.md` 第 7 節，不要改成疊 `opacity`
+
+## SEO
+
+- `sitemap.xml` 由 build 自動產生在 `/buzzer/sitemap.xml`，不用手動維護
+- **還沒做**：把這支 sitemap 掛進首頁的 `robots.txt`／sitemap 索引，以及 GA4。等接上正式網域再一起處理

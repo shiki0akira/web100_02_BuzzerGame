@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="{{htmlLang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{{seoTitle}}</title>
+    <meta name="description" content="{{seoDesc}}" />
+    <link rel="canonical" href="{{canonical}}" />
+    {{hreflang}}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{seoTitle}}" />
+    <meta property="og:description" content="{{seoDesc}}" />
+    <meta property="og:url" content="{{canonical}}" />
+    <meta property="og:locale" content="{{ogLocale}}" />
+
+    <link rel="icon" href="{{base}}/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="{{base}}/apple-touch-icon.png" />
+
+    <!-- 唯一來源在 web100_00_Homepage，不要把變數複製到這個 repo（ARCHITECTURE.md 第 7 節） -->
+    <link rel="stylesheet" href="https://www.vibeweb100.com/design-tokens.css" />
+    <link rel="stylesheet" href="{{base}}/app.css" />
+
+    <script>
+      // 在畫面畫出來之前決定主題，避免先閃一下另一個配色。
+      // class 掛在 <html> 而不是 <body>：這段跑的時候 <body> 還不存在。
+      // localStorage 的 key 跟系列其他專案一致（web100-theme），不要各專案自己發明。
+      try {
+        var saved = localStorage.getItem('web100-theme');
+        var light = saved ? saved === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (light) document.documentElement.classList.add('light');
+      } catch (e) {}
+    </script>
+  </head>
+
+  <body>
+    <header class="nav-pill">
+      <div class="nav-left">
+        <a class="brand" href="/" aria-label="Web100">
+          <svg viewBox="4 20 172 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path
+              d="M176 160H127.315C107.994 160 92.3316 144.33 92.3316 125V106.332H103.873V101.667H92.3316V90H87.6684V101.667H76.8814V106.332H87.6684V125C87.6684 144.33 72.0056 160 52.6853 160H4V20H8.95652C28.2768 20.0003 43.9396 35.6702 43.9396 55V90H48.6028V55C48.6028 35.6702 64.2656 20.0003 83.5859 20H96.4141C115.734 20.0003 131.397 35.6702 131.397 55V90H136.06V55C136.06 35.6702 151.723 20.0003 171.043 20H176V160Z"
+            />
+          </svg>
+        </a>
+        <a class="nav-title" href="{{base}}/{{lang}}/">{{navTitle}}</a>
+      </div>
+      <div class="nav-right">
+        <span class="lang-select">
+          <select class="btn-outline" id="lang-switch" aria-label="{{langSwitchLabel}}">
+            {{langOptions}}
+          </select>
+          <span class="chevron" aria-hidden="true"></span>
+        </span>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="{{themeToggleLabel}}">
+          <svg class="icon-dark" viewBox="0 -960 960 960" aria-hidden="true">
+            <path
+              d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Z"
+            />
+          </svg>
+          <svg class="icon-light" viewBox="0 -960 960 960" aria-hidden="true">
+            <path
+              d="M480-360q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Zm0 80q-83 0-141.5-58.5T280-480q0-83 58.5-141.5T480-680q83 0 141.5 58.5T680-480q0 83-58.5 141.5T480-280ZM200-440H40v-80h160v80Zm720 0H760v-80h160v80ZM440-760v-160h80v160h-80Zm0 720v-160h80v160h-80ZM256-650l-101-97 57-59 96 100-52 56Zm492 496-97-101 53-55 101 97-57 59Zm-98-550 97-101 59 57-100 96-56-52ZM154-212l101-97 55 53-97 101-59-57Z"
+            />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- 首頁：建立房間 / 加入房間 -->
+      <section class="view" id="view-home">
+        <div class="hero">
+          <h1>{{heroTitle}}</h1>
+          <p>{{heroDesc}}</p>
+        </div>
+
+        <div class="two-col">
+          <section class="surface">
+            <h2>{{createHeading}}</h2>
+            <label class="field-label" for="max-players">{{maxPlayersLabel}}</label>
+            <input
+              class="field"
+              id="max-players"
+              type="number"
+              inputmode="numeric"
+              min="2"
+              max="30"
+              step="1"
+              value="8"
+            />
+            <p class="hint">{{maxPlayersHint}}</p>
+            <button class="btn-solid btn-block" id="create-room" type="button">{{createButton}}</button>
+            <p class="form-error" id="create-error" role="alert" hidden></p>
+          </section>
+
+          <section class="surface">
+            <h2>{{joinHeading}}</h2>
+            <label class="field-label" for="join-code">{{codeLabel}}</label>
+            <input
+              class="field field-code"
+              id="join-code"
+              type="text"
+              inputmode="latin"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="4"
+              placeholder="{{codePlaceholder}}"
+            />
+            <button class="btn-outline btn-block" id="join-room" type="button">{{joinButton}}</button>
+            <p class="form-error" id="join-error" role="alert" hidden></p>
+          </section>
+        </div>
+
+        <section class="surface how">
+          <h2>{{howHeading}}</h2>
+          <ol>
+            <li>{{howStep1}}</li>
+            <li>{{howStep2}}</li>
+            <li>{{howStep3}}</li>
+            <li>{{howStep4}}</li>
+          </ol>
+        </section>
+      </section>
+
+      <!-- 加入房間：填暱稱 -->
+      <section class="view" id="view-join" hidden>
+        <section class="surface narrow">
+          <h1 class="join-title" id="join-title">{{joinTitle}}</h1>
+          <label class="field-label" for="nickname">{{nicknameLabel}}</label>
+          <input
+            class="field"
+            id="nickname"
+            type="text"
+            autocomplete="nickname"
+            maxlength="16"
+            placeholder="{{nicknamePlaceholder}}"
+          />
+          <button class="btn-solid btn-block" id="enter-room" type="button">{{enterButton}}</button>
+          <p class="form-error" id="nickname-error" role="alert" hidden></p>
+        </section>
+      </section>
+
+      <!-- 主持人控制台 -->
+      <section class="view" id="view-host" hidden>
+        <div class="role-badge">{{hostBadge}}</div>
+
+        <section class="surface share">
+          <div class="share-code">
+            <span class="field-label">{{roomCodeLabel}}</span>
+            <strong class="room-code" id="host-room-code">····</strong>
+            <p class="hint">{{shareHint}}</p>
+            <button class="btn-outline" id="copy-link" type="button">{{copyLink}}</button>
+            <p class="share-url" id="share-url"></p>
+          </div>
+          <div class="qr-box" id="qr-box" role="img" aria-label="{{qrAlt}}"></div>
+        </section>
+
+        <section class="surface">
+          <div class="section-head">
+            <h2>{{playersHeading}}</h2>
+            <span class="counter" id="player-count"></span>
+          </div>
+          <ul class="player-list" id="player-list"></ul>
+          <p class="empty" id="player-empty">{{emptyPlayers}}</p>
+        </section>
+
+        <section class="surface">
+          <label class="field-label" for="question">{{questionLabel}}</label>
+          <textarea class="field" id="question" rows="3" maxlength="500" placeholder="{{questionPlaceholder}}"></textarea>
+          <div class="host-actions">
+            <button class="btn-outline" id="show-question" type="button">{{showQuestionButton}}</button>
+            <button class="btn-solid" id="start-buzz" type="button">{{startButton}}</button>
+            <button class="btn-outline" id="reset-round" type="button">{{resetButton}}</button>
+          </div>
+        </section>
+
+        <section class="surface">
+          <h2>{{rankingHeading}}</h2>
+          <ol class="rank-list" id="host-rank-list"></ol>
+          <p class="empty" id="host-rank-empty">{{noBuzzYet}}</p>
+        </section>
+      </section>
+
+      <!-- 玩家：等待 / 搶答 -->
+      <section class="view" id="view-play" hidden>
+        <div class="role-badge" id="play-badge">{{playerBadge}}</div>
+
+        <section class="surface play-status">
+          <h1 id="play-title">{{waitingTitle}}</h1>
+          <p id="play-desc">{{waitingDesc}}</p>
+          <div class="question-box" id="play-question" hidden>
+            <span class="field-label">{{questionHeading}}</span>
+            <p id="play-question-text"></p>
+          </div>
+        </section>
+
+        <button class="buzz-button" id="buzz" type="button" disabled>
+          <span id="buzz-label">{{buzzButton}}</span>
+        </button>
+
+        <section class="surface">
+          <h2>{{rankingHeading}}</h2>
+          <ol class="rank-list" id="play-rank-list"></ol>
+          <p class="empty" id="play-rank-empty">{{noBuzzYet}}</p>
+        </section>
+      </section>
+
+      <!-- 連不上 / 房間有問題 -->
+      <section class="view" id="view-error" hidden>
+        <section class="surface narrow center">
+          <h1 id="error-title">{{errorTitle}}</h1>
+          <p id="error-desc">{{errorDesc}}</p>
+          <a class="btn-solid" href="{{base}}/{{lang}}/">{{backHome}}</a>
+        </section>
+      </section>
+    </main>
+
+    <div class="conn-banner" id="conn-banner" role="status" hidden></div>
+
+    <footer class="site-footer">
+      <div class="footer-left">
+        <a href="/">← Web100</a>
+        <span class="project-id">{{projectId}}</span>
+      </div>
+      <span>© 2026 Web100 Series</span>
+    </footer>
+
+    <script src="{{base}}/vendor/qrcode.js"></script>
+    <script>
+      window.T = {{stringsJson}};
+      window.BUZZER = { lang: '{{lang}}', base: '{{base}}' };
+    </script>
+    <script src="{{base}}/app.js"></script>
+  </body>
+</html>
