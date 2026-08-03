@@ -16,12 +16,20 @@ html.light {
   --color-brand-surface: var(--color-brand-surface-light);
   --color-brand-text: var(--color-brand-text-light);
   --color-brand-logo: var(--color-brand-logo-light);
-  --color-outline: var(--color-outline-light);
-  --color-outline-hover: var(--color-outline-hover-light);
-  --color-border: var(--color-border-light);
   --color-glow-1: var(--color-glow-1-light);
   --color-glow-2: var(--color-glow-2-light);
   --shadow-card: var(--shadow-card-light);
+
+  /* ⚠️ 淺色模式「整組改走 Secondary」是 Homepage 現行的做法，但線上的
+     design-tokens.css 還停在舊版（outline/border 仍是 Primary，而且根本沒有
+     --color-surface-glass-light）。在那份檔案補齊之前，這裡直接從 Secondary
+     primitive 算出來——用 color-mix 而不是寫死 rgba，色階之後改了這裡會跟著動。
+     等 design-tokens.css 同步之後，這一段就可以換回 var(--xxx-light)。 */
+  --color-accent: var(--secondary-700);
+  --color-outline: var(--secondary-800);
+  --color-outline-hover: color-mix(in srgb, var(--secondary-600) 22%, transparent);
+  --color-border: color-mix(in srgb, var(--secondary-700) 45%, transparent);
+  --color-surface-glass: color-mix(in srgb, var(--secondary-600) 20%, transparent);
 
   /* 實心按鈕淺色走 Secondary、深色走 Primary。淺色的每一階都比深色再深一階：
      Secondary 整條色階比 Primary 亮，直接對調的話白字疊上去過不了 WCAG AA。 */
@@ -232,26 +240,46 @@ select option {
   color: var(--color-text);
 }
 
+/* 深淺色切換是實心式（accent 填色 + 對比色圖示），跟語言下拉共用 40px 高度。
+   結構跟 Homepage 的 button.theme-toggle 一致：grid + place-items 置中，
+   顏色下在按鈕上、圖示吃 currentColor。 */
 .theme-toggle {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   padding: 0;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--btn-face);
+  background-color: var(--btn-face);
+  color: var(--btn-text);
+  /* 沒有模糊的實色陰影 = 按鈕的厚度 */
   box-shadow: 0 3px 0 var(--btn-edge);
   cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.theme-toggle svg {
+/* 圖示一律用 Material Symbols Rounded（24px / wght 400 / GRAD 0 / opsz 24），
+   直接內嵌 SVG 並吃 currentColor，不載入整套字型 */
+.icon {
+  display: block;
   width: 20px;
   height: 20px;
-  fill: var(--btn-text);
+  fill: currentColor;
+}
+
+/* hover：厚度從 3 變 2、按鈕同步往下 1，總高度不變 = 被壓下去的感覺 */
+.theme-toggle:hover {
+  background-color: var(--btn-face-hover);
+  box-shadow: 0 2px 0 var(--btn-edge-hover);
+  transform: translateY(1px);
+}
+
+/* 按著時整個貼平 */
+.theme-toggle:active {
+  box-shadow: 0 0 0 var(--btn-edge-hover);
+  transform: translateY(3px);
 }
 
 /* 兩顆圖示都在 HTML 裡，用 CSS 決定顯示哪顆：切換時不用重畫 DOM，也不會在 JS 跑之前閃 */
