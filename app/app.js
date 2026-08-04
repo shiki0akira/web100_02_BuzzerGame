@@ -40,6 +40,7 @@
   var pendingNickname = '';
   var questionSynced = false; // 主持人重整後只從伺服器補一次題目，之後以他正在打的內容為準
   var renderedQrUrl = null;
+  var currentView = null;
 
   var el = {};
 
@@ -132,6 +133,24 @@
   function showView(name) {
     ['home', 'join', 'host', 'play', 'error'].forEach(function (view) {
       el['view-' + view].hidden = view !== name;
+    });
+
+    // render() 每收到一次廣播就會呼叫 showView，只有真的換畫面才送統計
+    if (name !== currentView) {
+      currentView = name;
+      trackView(name);
+    }
+  }
+
+  // 四個畫面共用同一個網址，GA4 的自動 page_view 只會看到一筆，
+  // 分不出有多少人真的開了房間、有多少人只是看了首頁就走。
+  function trackView(name) {
+    if (typeof gtag !== 'function') return;
+    var path = BASE + '/' + LANG + '/' + name;
+    gtag('event', 'page_view', {
+      page_title: document.title,
+      page_location: location.origin + path,
+      page_path: path,
     });
   }
 

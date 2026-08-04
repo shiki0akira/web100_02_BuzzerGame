@@ -14,6 +14,17 @@
     <meta property="og:url" content="{{canonical}}" />
     <meta property="og:locale" content="{{ogLocale}}" />
 
+    <!-- 系列共用的 GA4 資源，跟 Homepage / Avalon 同一個 ID。
+         send_page_view 關掉自動送出，改由 app.js 手動送——這頁的四個畫面
+         共用同一個網址，自動送只會看到一筆，看不出有多少人真的開了房間。 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-S7PE5687BG"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', 'G-S7PE5687BG', { send_page_view: false });
+    </script>
+
     <link rel="icon" href="{{base}}/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="{{base}}/apple-touch-icon.png" />
 
