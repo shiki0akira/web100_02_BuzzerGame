@@ -77,7 +77,10 @@
       'error-title', 'error-desc', 'conn-banner',
       'close-room', 'leave-room',
       'confirm-dialog', 'confirm-title', 'confirm-desc', 'confirm-cancel', 'confirm-ok',
-      'closed-dialog', 'closed-ok',
+      'closed-dialog', 'closed-ok', 'kicked-dialog', 'kicked-ok',
+      'share-card', 'question-card', 'host-rank-card',
+      'start-game-block', 'start-game', 'start-game-error',
+      'play-lobby-card', 'play-player-count', 'play-player-list', 'play-rank-card',
     ].forEach(function (id) {
       el[id] = document.getElementById(id);
     });
@@ -341,6 +344,13 @@
       return;
     }
 
+    if (msg.t === 'kicked') {
+      giveUp = true;
+      hideBanner();
+      el['kicked-dialog'].showModal();
+      return;
+    }
+
     if (msg.t === 'closed') {
       // 主持人關了房間。giveUp 擋掉自動重連，否則跳出通知的同時還會一直重試
       giveUp = true;
@@ -372,6 +382,10 @@
       showFatal('roomFullTitle', 'roomFullDesc');
       return;
     }
+    if (code === 'room_started') {
+      showFatal('roomStartedTitle', 'roomStartedDesc');
+      return;
+    }
     // host_only / player_only / not_buzzing 這類是「按了現在不該按的東西」，
     // 畫面本來就會把按鈕鎖住，靜靜忽略即可，不用打斷使用者
   }
@@ -392,17 +406,26 @@
   function renderHost() {
     var state = lastState;
 
-    el['host-room-code'].textContent = state.code;
+    // 開始遊戲前是「等待大廳」：只有房間代碼、QR code 和名單。
+    // 開始之後就不再開放加入，分享區塊留著也沒有用，收起來讓出題成為焦點。
+    el['share-card'].hidden = state.started;
+    el['start-game-block'].hidden = state.started;
+    el['question-card'].hidden = !state.started;
+    el['host-rank-card'].hidden = !state.started;
 
-    var joinUrl = location.origin + BASE + '/' + LANG + '/?room=' + state.code;
-    el['share-url'].textContent = joinUrl;
-    renderQr(joinUrl);
+    if (!state.started) {
+      el['host-room-code'].textContent = state.code;
+      var joinUrl = location.origin + BASE + '/' + LANG + '/?room=' + state.code;
+      el['share-url'].textContent = joinUrl;
+      renderQr(joinUrl);
+      el['start-game'].disabled = state.players.length === 0;
+    }
 
     el['player-count'].textContent = t('playerCount', {
       n: state.players.length,
       max: state.maxPlayers,
     });
-    renderPlayers(state.players);
+    renderPlayers(el['player-list'], el['player-empty'], state.players, true);
 
     // 主持人重整後把伺服器上的題目補回輸入框，但只補一次——
     // 之後以他正在打的內容為準，不然每次廣播都會把游標和未送出的字洗掉
@@ -418,10 +441,10 @@
     renderRanks(el['host-rank-list'], el['host-rank-empty'], state.buzzOrder);
   }
 
-  function renderPlayers(players) {
-    var list = el['player-list'];
+  // withKick：只有主持人的名單才有「移出」按鈕
+  function renderPlayers(list, empty, players, withKick) {
     list.replaceChildren();
-    el['player-empty'].hidden = players.length > 0;
+    if (empty) empty.hidden = players.length > 0;
 
     players.forEach(function (player) {
       var item = document.createElement('li');
@@ -438,6 +461,26 @@
         tag.textContent = T.offlineTag;
         item.append(tag);
       }
+
+      if (withKick) {
+        var kick = document.createElement('button');
+        kick.type = 'button';
+        kick.className = 'btn-outline btn-danger';
+        kick.textContent = T.kickButton;
+        kick.setAttribute('aria-label', t('kickAria', { nickname: player.nickname }));
+        kick.addEventListener('click', function () {
+          askConfirm(
+            t('kickConfirmTitle', { nickname: player.nickname }),
+            T.kickConfirmDesc,
+            T.kickConfirmOk,
+            function () {
+              send({ t: 'kick', playerId: player.id });
+            },
+          );
+        });
+        item.append(kick);
+      }
+
       list.append(item);
     });
   }
@@ -452,6 +495,23 @@
         myPlace = i + 1;
         break;
       }
+    }
+
+    // 開始遊戲前：看得到還有誰在，但沒有搶答鍵也沒有排名榜
+    el['play-lobby-card'].hidden = state.started;
+    el['buzz'].hidden = !state.started;
+    el['play-rank-card'].hidden = !state.started;
+
+    if (!state.started) {
+      el['play-title'].textContent = T.lobbyWaitTitle;
+      el['play-desc'].textContent = T.lobbyWaitDesc;
+      el['play-question'].hidden = true;
+      el['play-player-count'].textContent = t('playerCount', {
+        n: state.players.length,
+        max: state.maxPlayers,
+      });
+      renderPlayers(el['play-player-list'], null, state.players, false);
+      return;
     }
 
     if (state.status === 'waiting') {
@@ -519,6 +579,15 @@
   /* ---------- 主持人控制 ---------- */
 
   function bindHost() {
+    el['start-game'].addEventListener('click', function () {
+      if (!lastState || lastState.players.length === 0) {
+        showFieldError(el['start-game-error'], T.startGameNeedsPlayer);
+        return;
+      }
+      hideFieldError(el['start-game-error']);
+      send({ t: 'startGame' });
+    });
+
     el['show-question'].addEventListener('click', function () {
       send({ t: 'question', text: el['question'].value });
     });
@@ -554,7 +623,7 @@
 
   function bindExit() {
     el['close-room'].addEventListener('click', function () {
-      askConfirm('closeConfirmTitle', 'closeConfirmDesc', 'closeRoomButton', function () {
+      askConfirm(T.closeConfirmTitle, T.closeConfirmDesc, T.closeRoomButton, function () {
         // 不等伺服器回覆就離開：房間關掉之後這條連線本來就會斷，
         // 停在原地等只會讓主持人看到一瞬間的「重新連線中」
         send({ t: 'close' });
@@ -563,7 +632,7 @@
     });
 
     el['leave-room'].addEventListener('click', function () {
-      askConfirm('leaveConfirmTitle', 'leaveConfirmDesc', 'leaveRoomButton', function () {
+      askConfirm(T.leaveConfirmTitle, T.leaveConfirmDesc, T.leaveRoomButton, function () {
         send({ t: 'leave' });
         goHome();
       });
@@ -574,12 +643,14 @@
     });
 
     el['closed-ok'].addEventListener('click', goHome);
+    el['kicked-ok'].addEventListener('click', goHome);
   }
 
-  function askConfirm(titleKey, descKey, confirmKey, onConfirm) {
-    el['confirm-title'].textContent = T[titleKey];
-    el['confirm-desc'].textContent = T[descKey];
-    el['confirm-ok'].textContent = T[confirmKey];
+  // 傳入的是已經組好的字串（移出玩家的標題要帶暱稱），不是 strings 的 key
+  function askConfirm(title, desc, confirmLabel, onConfirm) {
+    el['confirm-title'].textContent = title;
+    el['confirm-desc'].textContent = desc;
+    el['confirm-ok'].textContent = confirmLabel;
 
     // 每次都換一顆新的按鈕，才不會把上一次的 handler 累積上去
     var ok = el['confirm-ok'];

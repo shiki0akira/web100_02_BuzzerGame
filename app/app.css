@@ -694,6 +694,28 @@ textarea.field {
   color: var(--color-text-muted);
 }
 
+/* 名單裡的「移出」按鈕：不撐開列高，跟暱稱維持在同一條基線上 */
+.player-list .btn-danger {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+}
+
+#start-game-block {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+#start-game-block .btn-block {
+  margin-top: 0;
+}
+
+#start-game-block .hint {
+  text-align: center;
+}
+
 .player-list li.is-offline .name {
   color: var(--color-text-muted);
 }

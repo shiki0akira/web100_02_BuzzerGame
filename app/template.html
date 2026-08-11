@@ -81,7 +81,8 @@
           <button class="btn-outline btn-danger" id="close-room" type="button">{{closeRoomButton}}</button>
         </div>
 
-        <section class="surface share">
+        <!-- 等待大廳：只在主持人按下「開始遊戲」之前顯示 -->
+        <section class="surface share" id="share-card">
           <div class="share-code">
             <span class="field-label">{{roomCodeLabel}}</span>
             <strong class="room-code" id="host-room-code">····</strong>
@@ -99,9 +100,16 @@
           </div>
           <ul class="player-list" id="player-list"></ul>
           <p class="empty" id="player-empty">{{emptyPlayers}}</p>
+
+          <div id="start-game-block">
+            <button class="btn-solid btn-block" id="start-game" type="button">{{startGameButton}}</button>
+            <p class="hint">{{startGameHint}}</p>
+            <p class="form-error" id="start-game-error" role="alert" hidden></p>
+          </div>
         </section>
 
-        <section class="surface">
+        <!-- 出題與排名：遊戲開始之後才出現 -->
+        <section class="surface" id="question-card">
           <label class="field-label" for="question">{{questionLabel}}</label>
           <textarea class="field" id="question" rows="3" maxlength="500" placeholder="{{questionPlaceholder}}"></textarea>
           <div class="host-actions">
@@ -111,7 +119,7 @@
           </div>
         </section>
 
-        <section class="surface">
+        <section class="surface" id="host-rank-card">
           <h2>{{rankingHeading}}</h2>
           <ol class="rank-list" id="host-rank-list"></ol>
           <p class="empty" id="host-rank-empty">{{noBuzzYet}}</p>
@@ -134,11 +142,20 @@
           </div>
         </section>
 
+        <!-- 等待大廳：讓玩家看得到還有誰在，不會以為自己進錯房間 -->
+        <section class="surface" id="play-lobby-card">
+          <div class="section-head">
+            <h2>{{playersHeading}}</h2>
+            <span class="counter" id="play-player-count"></span>
+          </div>
+          <ul class="player-list" id="play-player-list"></ul>
+        </section>
+
         <button class="buzz-button" id="buzz" type="button" disabled>
           <span id="buzz-label">{{buzzButton}}</span>
         </button>
 
-        <section class="surface">
+        <section class="surface" id="play-rank-card">
           <h2>{{rankingHeading}}</h2>
           <ol class="rank-list" id="play-rank-list"></ol>
           <p class="empty" id="play-rank-empty">{{noBuzzYet}}</p>
@@ -174,6 +191,15 @@
       <p>{{roomClosedDesc}}</p>
       <div class="modal-actions">
         <button class="btn-solid" id="closed-ok" type="button">{{backHome}}</button>
+      </div>
+    </dialog>
+
+    <!-- 被主持人移出房間時看到的通知 -->
+    <dialog class="modal" id="kicked-dialog">
+      <h2>{{kickedTitle}}</h2>
+      <p>{{kickedDesc}}</p>
+      <div class="modal-actions">
+        <button class="btn-solid" id="kicked-ok" type="button">{{backHome}}</button>
       </div>
     </dialog>
 

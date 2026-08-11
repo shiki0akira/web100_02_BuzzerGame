@@ -55,6 +55,9 @@ export class BuzzerRoom {
       maxPlayers,
       createdAt: Date.now(),
       status: 'waiting', // waiting | question_shown | buzzing | buzzed
+      // 主持人按下「開始遊戲」之前是等待大廳，之後就不再開放新玩家加入。
+      // 已經在名單上的人不受影響，重整、斷線重連都還進得來。
+      started: false,
       currentQuestion: '',
       buzzStartedAt: null,
       players: {}, // { [playerId]: { nickname, joinedAt } }
@@ -112,6 +115,10 @@ export class BuzzerRoom {
         return this.handleBuzz(ws, room, who);
       case 'reset':
         return this.handleReset(ws, room, who);
+      case 'startGame':
+        return this.handleStartGame(ws, room, who);
+      case 'kick':
+        return this.handleKick(ws, room, who, msg);
       case 'leave':
         return this.handleLeave(ws, room, who);
       case 'close':
@@ -147,6 +154,11 @@ export class BuzzerRoom {
       if (!nickname) return this.sendError(ws, 'nickname_required');
 
       const known = room.players[clientId];
+      // 遊戲開始後就不收新人了。已經在名單上的人不受影響——
+      // 這條擋的是「臨時加入」，不是「重整或斷線後回來」
+      if (!known && room.started) {
+        return this.sendError(ws, 'room_started', true);
+      }
       if (!known && Object.keys(room.players).length >= room.maxPlayers) {
         return this.sendError(ws, 'room_full', true);
       }
@@ -233,6 +245,41 @@ export class BuzzerRoom {
     room.buzzStartedAt = null;
 
     await this.saveRoom({ touch: true });
+    this.broadcast(room);
+  }
+
+  // 主持人按下「開始遊戲」：關掉大廳，之後只有名單上的人進得來
+  async handleStartGame(ws, room, who) {
+    if (who.role !== 'host') return this.sendError(ws, 'host_only');
+    if (room.started) return;
+
+    room.started = true;
+    await this.saveRoom({ touch: true });
+    this.broadcast(room);
+  }
+
+  // 主持人把某個玩家移出房間
+  async handleKick(ws, room, who, msg) {
+    if (who.role !== 'host') return this.sendError(ws, 'host_only');
+
+    const playerId = typeof msg.playerId === 'string' ? msg.playerId : '';
+    if (!room.players[playerId]) return this.sendError(ws, 'no_such_player');
+
+    delete room.players[playerId];
+    room.buzzOrder = room.buzzOrder.filter((entry) => entry.playerId !== playerId);
+    await this.saveRoom({ touch: true });
+
+    // 先通知本人再廣播，被踢的人才不會先看到「自己不在名單上」的狀態才收到通知
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket.deserializeAttachment()?.clientId !== playerId) continue;
+      try {
+        socket.send(JSON.stringify({ t: 'kicked' }));
+        socket.serializeAttachment(null);
+        socket.close(1000, 'kicked');
+      } catch {
+        /* 已經斷了 */
+      }
+    }
     this.broadcast(room);
   }
 
@@ -334,6 +381,7 @@ function publicState(room, online) {
     code: room.code,
     maxPlayers: room.maxPlayers,
     status: room.status,
+    started: room.started,
     question: room.currentQuestion,
     hostOnline: online.has(room.hostId),
     players: Object.entries(room.players)

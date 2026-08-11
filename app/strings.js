@@ -128,6 +128,22 @@ export const STRINGS = {
     emptyPlayers: '還沒有人加入，等大家掃碼進來',
     offlineTag: '離線',
 
+    startGameButton: '開始遊戲',
+    startGameHint: '等大家都進來之後再按。開始之後就不再開放新玩家加入。',
+    startGameNeedsPlayer: '至少要有一位玩家加入才能開始。',
+    kickButton: '移出',
+    kickAria: '把 {nickname} 移出房間',
+    kickConfirmTitle: '把 {nickname} 移出房間？',
+    kickConfirmDesc: '這位玩家會被退出房間，這一輪的搶答紀錄也會一起移除。他之後仍可以重新加入。',
+    kickConfirmOk: '移出房間',
+    kickedTitle: '你已被主持人移出房間',
+    kickedDesc: '如果是誤操作，跟主持人說一聲，重新輸入房間代碼就能再加入。',
+
+    lobbyWaitTitle: '等待主持人開始遊戲',
+    lobbyWaitDesc: '已經加入的人會顯示在下面。主持人按下「開始遊戲」之後就可以搶答了。',
+    roomStartedTitle: '遊戲已經開始',
+    roomStartedDesc: '主持人已經開始這場遊戲，房間不再開放加入。請跟主持人確認要不要重開一局。',
+
     questionLabel: '題目',
     questionPlaceholder: '在這裡輸入題目，唸完之後按「開始搶答」',
     showQuestionButton: '送出題目',
@@ -282,6 +298,25 @@ export const STRINGS = {
     playersHeading: 'Players joined',
     emptyPlayers: 'Nobody yet — waiting for people to scan in',
     offlineTag: 'offline',
+
+    startGameButton: 'Start game',
+    startGameHint: 'Press once everyone is in. No new players can join after this.',
+    startGameNeedsPlayer: 'At least one player has to join first.',
+    kickButton: 'Remove',
+    kickAria: 'Remove {nickname} from the room',
+    kickConfirmTitle: 'Remove {nickname} from the room?',
+    kickConfirmDesc:
+      'This player is dropped from the room and their buzz for this round goes with them. They can join again later.',
+    kickConfirmOk: 'Remove',
+    kickedTitle: 'The host removed you from the room',
+    kickedDesc: 'If that was a mistake, ask the host — entering the room code again lets you back in.',
+
+    lobbyWaitTitle: 'Waiting for the host to start',
+    lobbyWaitDesc:
+      'Everyone who has joined shows up below. Once the host hits “Start game”, buzzing begins.',
+    roomStartedTitle: 'The game already started',
+    roomStartedDesc:
+      'The host has already started this game and the room is closed to new players. Check with the host about running another round.',
 
     questionLabel: 'Question',
     questionPlaceholder: 'Type the question here, then hit “Start buzzing” once you have read it out',
