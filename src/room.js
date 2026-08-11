@@ -112,6 +112,10 @@ export class BuzzerRoom {
         return this.handleBuzz(ws, room, who);
       case 'reset':
         return this.handleReset(ws, room, who);
+      case 'leave':
+        return this.handleLeave(ws, room, who);
+      case 'close':
+        return this.handleClose(ws, room, who);
       case 'ping':
         return ws.send(JSON.stringify({ t: 'pong' }));
       default:
@@ -230,6 +234,50 @@ export class BuzzerRoom {
 
     await this.saveRoom({ touch: true });
     this.broadcast(room);
+  }
+
+  // 玩家主動離開：跟「斷線」不同，要真的從名單移除，主持人才知道這個人不玩了
+  async handleLeave(ws, room, who) {
+    if (who.role !== 'player') return this.sendError(ws, 'player_only');
+
+    delete room.players[who.clientId];
+    room.buzzOrder = room.buzzOrder.filter((entry) => entry.playerId !== who.clientId);
+
+    // 先把 attachment 清掉再廣播，這條連線才不會被算進「在線」
+    ws.serializeAttachment(null);
+    await this.saveRoom({ touch: true });
+    this.broadcast(room);
+
+    try {
+      ws.close(1000, 'left');
+    } catch {
+      /* 已經在關了 */
+    }
+  }
+
+  // 主持人關閉房間：先通知所有人，再把房間整個清掉
+  async handleClose(ws, room, who) {
+    if (who.role !== 'host') return this.sendError(ws, 'host_only');
+
+    const notice = JSON.stringify({ t: 'closed' });
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        socket.send(notice);
+      } catch {
+        /* 這條已經斷了，跳過 */
+      }
+    }
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        socket.close(1000, 'room_closed');
+      } catch {
+        /* 同上 */
+      }
+    }
+
+    // deleteAll 會連鬧鐘一起清掉，之後拿同一個代碼進來就是 room_not_found
+    await this.ctx.storage.deleteAll();
+    this.room = null;
   }
 
   broadcast(room) {

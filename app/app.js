@@ -16,11 +16,6 @@
   var LANG = window.BUZZER.lang;
   var BASE = window.BUZZER.base;
 
-  // 這幾個 key 跟系列其他專案共用，不要各專案自己發明一套
-  var THEME_KEY = 'web100-theme';
-  var LANG_KEY = 'web100-lang';
-  var LANG_COOKIE = 'web100_lang';
-
   var CLIENT_KEY = 'web100-buzzer-client';
   var ROOM_KEY_PREFIX = 'web100-buzzer-room-';
 
@@ -48,12 +43,12 @@
 
   function init() {
     cacheElements();
-    setupTheme();
-    setupLangSwitch();
+    // 深淺色與語言切換在 header.js（規則頁也要用），這裡只管遊戲本身
     bindHome();
     bindJoin();
     bindHost();
     bindPlay();
+    bindExit();
 
     document.addEventListener('visibilitychange', function () {
       // 手機鎖屏或切到別的 App 時連線常被系統收掉，回來時馬上補連，不要等退避計時器
@@ -71,7 +66,6 @@
   function cacheElements() {
     [
       'view-home', 'view-join', 'view-host', 'view-play', 'view-error',
-      'theme-toggle', 'lang-switch',
       'max-players', 'create-room', 'create-error', 'join-code', 'join-room', 'join-error',
       'join-title', 'nickname', 'enter-room', 'nickname-error',
       'host-room-code', 'share-url', 'copy-link', 'qr-box',
@@ -81,6 +75,9 @@
       'play-title', 'play-desc', 'play-question', 'play-question-text',
       'buzz', 'buzz-label', 'play-rank-list', 'play-rank-empty',
       'error-title', 'error-desc', 'conn-banner',
+      'close-room', 'leave-room',
+      'confirm-dialog', 'confirm-title', 'confirm-desc', 'confirm-cancel', 'confirm-ok',
+      'closed-dialog', 'closed-ok',
     ].forEach(function (id) {
       el[id] = document.getElementById(id);
     });
@@ -145,13 +142,7 @@
   // 四個畫面共用同一個網址，GA4 的自動 page_view 只會看到一筆，
   // 分不出有多少人真的開了房間、有多少人只是看了首頁就走。
   function trackView(name) {
-    if (typeof gtag !== 'function') return;
-    var path = BASE + '/' + LANG + '/' + name;
-    gtag('event', 'page_view', {
-      page_title: document.title,
-      page_location: location.origin + path,
-      page_path: path,
-    });
+    window.trackPageView(BASE + '/' + LANG + '/' + name);
   }
 
   function showFieldError(node, message) {
@@ -178,29 +169,6 @@
     el['error-title'].textContent = t(titleKey);
     el['error-desc'].textContent = t(descKey);
     showView('error');
-  }
-
-  /* ---------- 主題與語言 ---------- */
-
-  function setupTheme() {
-    el['theme-toggle'].addEventListener('click', function () {
-      var light = document.documentElement.classList.toggle('light');
-      writeStore(THEME_KEY, light ? 'light' : 'dark');
-    });
-  }
-
-  function setupLangSwitch() {
-    el['lang-switch'].addEventListener('change', function () {
-      var next = this.value;
-      if (next === LANG) return;
-
-      // 手動選過的語言優先權高於瀏覽器語言與 IP 判斷，寫 cookie 給 /buzzer/ 的轉址用
-      writeStore(LANG_KEY, next);
-      document.cookie = LANG_COOKIE + '=' + encodeURIComponent(next) + '; path=/; max-age=31536000; samesite=lax';
-
-      // 切語言不該把人踢出房間，?room= 要帶著走
-      location.href = BASE + '/' + next + '/' + (roomCode ? '?room=' + roomCode : '');
-    });
   }
 
   /* ---------- 首頁 ---------- */
@@ -370,6 +338,14 @@
     if (msg.t === 'state') {
       lastState = msg.state;
       render();
+      return;
+    }
+
+    if (msg.t === 'closed') {
+      // 主持人關了房間。giveUp 擋掉自動重連，否則跳出通知的同時還會一直重試
+      giveUp = true;
+      hideBanner();
+      el['closed-dialog'].showModal();
       return;
     }
 
@@ -572,6 +548,56 @@
           button.textContent = T.copyFailed;
         });
     });
+  }
+
+  /* ---------- 離開 / 關閉房間 ---------- */
+
+  function bindExit() {
+    el['close-room'].addEventListener('click', function () {
+      askConfirm('closeConfirmTitle', 'closeConfirmDesc', 'closeRoomButton', function () {
+        // 不等伺服器回覆就離開：房間關掉之後這條連線本來就會斷，
+        // 停在原地等只會讓主持人看到一瞬間的「重新連線中」
+        send({ t: 'close' });
+        goHome();
+      });
+    });
+
+    el['leave-room'].addEventListener('click', function () {
+      askConfirm('leaveConfirmTitle', 'leaveConfirmDesc', 'leaveRoomButton', function () {
+        send({ t: 'leave' });
+        goHome();
+      });
+    });
+
+    el['confirm-cancel'].addEventListener('click', function () {
+      el['confirm-dialog'].close();
+    });
+
+    el['closed-ok'].addEventListener('click', goHome);
+  }
+
+  function askConfirm(titleKey, descKey, confirmKey, onConfirm) {
+    el['confirm-title'].textContent = T[titleKey];
+    el['confirm-desc'].textContent = T[descKey];
+    el['confirm-ok'].textContent = T[confirmKey];
+
+    // 每次都換一顆新的按鈕，才不會把上一次的 handler 累積上去
+    var ok = el['confirm-ok'];
+    var fresh = ok.cloneNode(true);
+    ok.parentNode.replaceChild(fresh, ok);
+    el['confirm-ok'] = fresh;
+    fresh.addEventListener('click', function () {
+      el['confirm-dialog'].close();
+      onConfirm();
+    });
+
+    el['confirm-dialog'].showModal();
+  }
+
+  // 回搶答首頁。giveUp 先立起來，離開途中連線斷掉不會又跳出重連橫幅
+  function goHome() {
+    giveUp = true;
+    location.href = BASE + '/' + LANG + '/';
   }
 
   /* ---------- 玩家搶答 ---------- */

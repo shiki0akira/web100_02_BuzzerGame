@@ -444,14 +444,58 @@ main {
   font-weight: 600;
 }
 
-.how ol {
+/* ---------- 規則頁 ---------- */
+
+.rules-link {
+  margin: 0;
+  text-align: center;
+}
+
+.rules-link a {
+  color: var(--color-accent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.rules-link a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.prose ol,
+.prose ul {
   margin: var(--space-2) 0 0;
   padding-left: 1.25rem;
   color: var(--color-text-muted);
 }
 
-.how li + li {
+.prose li + li {
   margin-top: var(--space-1);
+}
+
+.faq {
+  margin: var(--space-2) 0 0;
+}
+
+.faq dt {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.faq dd {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+}
+
+.faq dt:not(:first-child) {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.rules-back {
+  margin: 0;
+  text-align: center;
 }
 
 /* ---------- 表單 ---------- */
@@ -511,13 +555,60 @@ textarea.field {
 
 /* ---------- 主持人：分享區 ---------- */
 
+/* 角色標籤在左、離開／關閉房間在右 */
+.room-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .role-badge {
-  align-self: flex-start;
   padding: 0.15rem 0.7rem;
   border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+/* 離開／關閉房間是破壞性操作，但不用紅色——整個系列沒有錯誤色階，
+   臨時開一個紅色會跟品牌色打架。改用比一般外框鈕小一號、字重輕一階，
+   在版面上退到次要位置，真正的攔截交給確認彈窗 */
+.btn-danger {
+  min-height: 32px;
+  padding: 0 0.85rem;
+  font-size: 0.8rem;
+}
+
+/* ---------- 確認彈窗 ---------- */
+
+.modal {
+  width: min(400px, calc(100% - 2rem));
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.modal p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
 }
 
 .share {

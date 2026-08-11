@@ -34,6 +34,7 @@ export const STRINGS = {
       '多人聚會、教學課堂、公司活動用的線上搶答器。主持人建立房間分享 QR code，大家用手機掃碼輸入暱稱就能加入，按下搶答即時顯示排名。免下載、免註冊、免費使用。',
 
     navTitle: '現場搶答',
+    navRules: '規則',
 
     heroTitle: '掃碼就能搶答',
     heroDesc:
@@ -50,11 +51,53 @@ export const STRINGS = {
     codePlaceholder: '例如 A3KP',
     joinButton: '加入',
 
-    howHeading: '怎麼玩',
+    rulesLinkText: '第一次玩？看看怎麼開始 →',
+
+    // ---- 規則頁 ----
+    rulesSeoTitle: '搶答遊戲怎麼玩｜主持人與玩家操作說明 - Web100 現場搶答',
+    rulesSeoDesc:
+      '現場搶答遊戲的完整玩法說明：主持人如何建立房間、出題與判定，玩家如何掃碼加入與搶答，以及房間人數上限、重新整理、離線等常見問題。',
+    rulesH1: '搶答遊戲怎麼玩',
+    rulesIntro:
+      '一台裝置當主持人、其他人用手機當搶答鍵。不用下載 App、不用註冊帳號，掃個 QR code 就能開始。',
+
+    howHeading: '快速上手',
     howStep1: '主持人選好人數，按「建立房間」。',
     howStep2: '其他人掃 QR code 或輸入房間代碼，填暱稱加入。',
     howStep3: '主持人唸完題目，按「開始搶答」。',
     howStep4: '所有人的手機同時變成搶答鍵，按下去就依先後排名。',
+
+    rulesHostHeading: '主持人',
+    rulesHost1:
+      '第一個建立房間的裝置就是主持人，不用登入。手機、平板、筆電都可以，投影出來給大家看效果最好。',
+    rulesHost2:
+      '把題目打進輸入框後有兩個選擇：按「送出題目」讓大家先在自己手機上看到題目，或直接按「開始搶答」一次送出並開放搶答。',
+    rulesHost3: '一題結束後按「重置／下一題」，排名和題目會一起清空，接著出下一題。',
+
+    rulesPlayerHeading: '玩家',
+    rulesPlayer1: '掃 QR code 或輸入 4 碼房間代碼，填一個大家認得出你的暱稱就能進房。',
+    rulesPlayer2: '搶答鍵在主持人按下「開始搶答」之前是暗的，按不下去，不用擔心手滑。',
+    rulesPlayer3: '按下去之後畫面會顯示你是第幾名，同時看得到完整的排名榜。',
+
+    rulesJudgeHeading: '搶答怎麼判定',
+    rulesJudge1: '依伺服器收到的先後順序排名，不是比手機時間，所以不會因為誰的手機比較快而不公平。',
+    rulesJudge2: '同一輪同一個人只記錄一次，重複按不會多一筆，也不會把自己往後推。',
+    rulesJudge3:
+      '第一個人按下去之後，其他人還是可以繼續按，畫面不會鎖死——排名榜會一路排到最後一位。',
+
+    rulesFaqHeading: '常見問題',
+    rulesFaqQ1: '房間人數最多幾個人？',
+    rulesFaqA1: '2 到 30 人，由主持人在建立房間時決定，不含主持人自己。',
+    rulesFaqQ2: '主持人不小心重新整理頁面會怎樣？',
+    rulesFaqA2:
+      '還是主持人，房間也不會消失。身份記在這台裝置的瀏覽器裡，重新連上就會自動認回來。玩家重整同理，暱稱不用重填。',
+    rulesFaqQ3: '有人手機鎖屏或斷線會怎樣？',
+    rulesFaqA3:
+      '名單上會標成「離線」，但不會被踢出房間。網路回來會自動重連，之前的暱稱和搶答紀錄都還在。',
+    rulesFaqQ4: '房間會一直存在嗎？',
+    rulesFaqA4: '閒置 3 小時沒有任何動作就會自動清除。要繼續玩的話請主持人重新建立一個房間。',
+
+    rulesBackToGame: '開始玩',
 
     joinTitle: '加入房間',
     nicknameLabel: '你的暱稱',
@@ -63,6 +106,17 @@ export const STRINGS = {
 
     hostBadge: '主持人',
     playerBadge: '玩家',
+
+    leaveRoomButton: '離開房間',
+    closeRoomButton: '關閉房間',
+    cancelButton: '取消',
+    leaveConfirmTitle: '離開房間？',
+    leaveConfirmDesc:
+      '你的名字會從名單上移除，這一輪的搶答紀錄也會一起消失。想再回來的話，重新輸入房間代碼就可以。',
+    closeConfirmTitle: '關閉房間？',
+    closeConfirmDesc: '房間會直接結束，所有玩家都會被退出，題目和排名都不會保留。這個動作無法復原。',
+    roomClosedTitle: '主持人已關閉房間',
+    roomClosedDesc: '這場遊戲結束了。要繼續玩的話，請主持人重新建立一個房間。',
     roomCodeLabel: '房間代碼',
     shareHint: '請其他人掃這個 QR code，或直接輸入房間代碼加入',
     qrAlt: '加入房間用的 QR code',
@@ -127,6 +181,7 @@ export const STRINGS = {
       'A free online buzzer for parties, classrooms and company events. The host creates a room and shares a QR code, everyone joins from their phone with a nickname, and buzz order is ranked in real time. No download, no account needed.',
 
     navTitle: 'Buzzer',
+    navRules: 'Rules',
 
     heroTitle: 'Scan the code, hit the buzzer',
     heroDesc:
@@ -143,11 +198,60 @@ export const STRINGS = {
     codePlaceholder: 'e.g. A3KP',
     joinButton: 'Join',
 
-    howHeading: 'How it works',
+    rulesLinkText: 'First time here? See how it works →',
+
+    // ---- 規則頁 ----
+    rulesSeoTitle: 'How to Play the Buzzer Game | Host and Player Guide - Web100',
+    rulesSeoDesc:
+      'A full guide to the live buzzer game: how the host creates a room, shows questions and opens buzzing, how players join by QR code, and answers on player limits, refreshing and dropped connections.',
+    rulesH1: 'How to play',
+    rulesIntro:
+      'One device hosts, everyone else uses their phone as a buzzer. No app to install, no account to create — just scan a QR code and start.',
+
+    howHeading: 'Quick start',
     howStep1: 'The host picks the number of players and creates a room.',
     howStep2: 'Everyone else scans the QR code or types the room code, then picks a nickname.',
     howStep3: 'The host reads the question out loud and hits “Start buzzing”.',
     howStep4: 'Every phone turns into a buzzer — first press, first place.',
+
+    rulesHostHeading: 'For the host',
+    rulesHost1:
+      'Whoever creates the room is the host — no login needed. Phone, tablet or laptop all work; putting it on a big screen works best.',
+    rulesHost2:
+      'Once the question is typed in, you have two options: “Show question” puts it on everyone’s phone first, or “Start buzzing” sends it and opens buzzing in one go.',
+    rulesHost3:
+      'When the round is over, hit “Reset / next question” — the ranking and the question are cleared together.',
+
+    rulesPlayerHeading: 'For players',
+    rulesPlayer1:
+      'Scan the QR code or type the 4-character room code, pick a nickname the others will recognise, and you are in.',
+    rulesPlayer2:
+      'The buzzer stays dimmed and unclickable until the host opens buzzing, so there is no way to jump the gun by accident.',
+    rulesPlayer3:
+      'After you press it, your place shows up right away, along with the full ranking of everyone else.',
+
+    rulesJudgeHeading: 'How the order is decided',
+    rulesJudge1:
+      'Ranking follows the order the server receives the presses, not the clock on anyone’s phone — a faster phone gains nothing.',
+    rulesJudge2:
+      'Each player is recorded once per round. Pressing again changes nothing and never pushes you further down.',
+    rulesJudge3:
+      'Once the first person buzzes, everyone else can still press — nothing freezes, and the ranking fills in all the way down.',
+
+    rulesFaqHeading: 'Common questions',
+    rulesFaqQ1: 'How many players fit in a room?',
+    rulesFaqA1: '2 to 30, set by the host when creating the room. The host does not count towards it.',
+    rulesFaqQ2: 'What if the host reloads the page by accident?',
+    rulesFaqA2:
+      'They stay the host and the room stays put — the role is remembered in that device’s browser and picked up again on reconnect. Same for players: no need to type the nickname again.',
+    rulesFaqQ3: 'What happens when someone’s phone locks or drops off?',
+    rulesFaqA3:
+      'They are marked offline in the list but never kicked out. The connection comes back on its own, with the nickname and buzz record intact.',
+    rulesFaqQ4: 'Do rooms last forever?',
+    rulesFaqA4:
+      'A room is cleared after 3 hours with no activity. To keep playing, the host just creates a new one.',
+
+    rulesBackToGame: 'Start playing',
 
     joinTitle: 'Join room',
     nicknameLabel: 'Your nickname',
@@ -156,6 +260,18 @@ export const STRINGS = {
 
     hostBadge: 'Host',
     playerBadge: 'Player',
+
+    leaveRoomButton: 'Leave room',
+    closeRoomButton: 'Close room',
+    cancelButton: 'Cancel',
+    leaveConfirmTitle: 'Leave this room?',
+    leaveConfirmDesc:
+      'Your name comes off the list and your buzz for this round goes with it. You can come back any time by entering the room code again.',
+    closeConfirmTitle: 'Close this room?',
+    closeConfirmDesc:
+      'The room ends immediately, everyone is removed, and the question and ranking are not kept. This cannot be undone.',
+    roomClosedTitle: 'The host closed the room',
+    roomClosedDesc: 'This game is over. To keep playing, ask the host to create a new room.',
     roomCodeLabel: 'Room code',
     shareHint: 'Have everyone scan this QR code, or type the room code to join',
     qrAlt: 'QR code for joining the room',

@@ -1,10 +1,11 @@
 /*
  * 把 app/ 的樣板組成 dist/，給 wrangler 的 assets binding 用。
  *
- * 每個語言各產生一份完整的靜態 HTML（title / description / canonical / hreflang 都填好，
- * 首頁文案直接寫進 HTML）。沒有這道 build 的話，所有語言會共用同一份中文 title、
- * 而且爬蟲看不到任何內容——首頁專案踩過同樣的坑，做法保持一致。
+ * 每個語言 × 每個頁面各產生一份完整的靜態 HTML（title / description / canonical /
+ * hreflang 都填好，文案直接寫進 HTML）。沒有這道 build 的話，所有語言會共用同一份
+ * 中文 title、而且爬蟲看不到任何內容——首頁專案踩過同樣的坑，做法保持一致。
  *
+ * 導覽列與頁尾放在 app/partials/，兩個頁面共用同一份，不會改了一邊漏另一邊。
  * 樣板裡對不到值的 {{token}} 會直接讓 build 失敗，不會靜靜產出半空的頁面。
  */
 
@@ -26,8 +27,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const outBase = join(dist, BASE_PATH.replace(/^\//, ''));
 
-// 這兩個 token 是直接塞 HTML / JSON，不做跳脫；其餘一律當純文字處理
+// 這幾個 token 是直接塞 HTML / JSON，不做跳脫；其餘一律當純文字處理
 const RAW_TOKENS = new Set(['hreflang', 'stringsJson', 'langOptions']);
+
+// dir 是語言後面的路徑：遊戲頁在 /buzzer/{lang}/、規則頁在 /buzzer/{lang}/rules/
+const PAGES = [
+  { template: 'template.html', dir: '', titleKey: 'seoTitle', descKey: 'seoDesc' },
+  { template: 'rules.html', dir: 'rules', titleKey: 'rulesSeoTitle', descKey: 'rulesSeoDesc' },
+];
 
 await main();
 
@@ -37,17 +44,27 @@ async function main() {
   await cleanDist();
   await mkdir(outBase, { recursive: true });
 
-  const template = await readFile(join(root, 'app', 'template.html'), 'utf8');
+  const partials = {
+    head: await readPartial('head.html'),
+    header: await readPartial('header.html'),
+    footer: await readPartial('footer.html'),
+  };
 
-  for (const lang of LANGS) {
-    const html = render(template, tokensFor(lang));
-    const dir = join(outBase, lang);
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, 'index.html'), html, 'utf8');
-    console.log(`  ${BASE_PATH}/${lang}/`);
+  for (const page of PAGES) {
+    const template = await readFile(join(root, 'app', page.template), 'utf8');
+    const withPartials = injectPartials(template, partials);
+
+    for (const lang of LANGS) {
+      const html = render(withPartials, tokensFor(lang, page));
+      const dir = join(outBase, lang, page.dir);
+      await mkdir(dir, { recursive: true });
+      await writeFile(join(dir, 'index.html'), html, 'utf8');
+      console.log(`  ${pagePath(lang, page)}`);
+    }
   }
 
   await cp(join(root, 'app', 'app.js'), join(outBase, 'app.js'));
+  await cp(join(root, 'app', 'header.js'), join(outBase, 'header.js'));
   await cp(join(root, 'app', 'app.css'), join(outBase, 'app.css'));
 
   // QR 產生器整包放進來，不走 CDN：多一個網路請求、多一個第三方故障點都不值得
@@ -75,6 +92,15 @@ async function cleanDist() {
   }
 }
 
+function readPartial(name) {
+  return readFile(join(root, 'app', 'partials', name), 'utf8');
+}
+
+// partial 自己也含 {{token}}，所以要先貼進來、再一起做替換
+function injectPartials(template, partials) {
+  return template.replace(/\{\{(head|header|footer)\}\}/g, (whole, name) => partials[name].trimEnd());
+}
+
 // 漏翻的 key 在執行期會變成空字串，很難發現，所以在這裡先擋下來
 function checkStrings() {
   const reference = Object.keys(STRINGS[DEFAULT_LANG]).sort();
@@ -91,7 +117,11 @@ function checkStrings() {
   }
 }
 
-function tokensFor(lang) {
+function pagePath(lang, page) {
+  return `${BASE_PATH}/${lang}/` + (page.dir ? `${page.dir}/` : '');
+}
+
+function tokensFor(lang, page) {
   const strings = STRINGS[lang];
 
   return {
@@ -100,8 +130,11 @@ function tokensFor(lang) {
     langOptions: langOptions(lang),
     base: BASE_PATH,
     projectId: PROJECT_ID,
-    canonical: `${ORIGIN}${BASE_PATH}/${lang}/`,
-    hreflang: hreflangTags(),
+    // head partial 用的是通用名稱，各頁面把自己的 title/description 餵進去
+    pageTitle: strings[page.titleKey],
+    pageDesc: strings[page.descKey],
+    canonical: ORIGIN + pagePath(lang, page),
+    hreflang: hreflangTags(page),
     stringsJson: toScriptJson(strings),
   };
 }
@@ -114,36 +147,37 @@ function langOptions(current) {
   ).join('\n            ');
 }
 
-function hreflangTags() {
+// hreflang 要指到「同一個頁面的其他語言」，不是一律指回遊戲頁
+function hreflangTags(page) {
   const tags = LANGS.map(
-    (lang) =>
-      `<link rel="alternate" hreflang="${lang}" href="${ORIGIN}${BASE_PATH}/${lang}/" />`,
+    (lang) => `<link rel="alternate" hreflang="${lang}" href="${ORIGIN}${pagePath(lang, page)}" />`,
   );
   tags.push(
-    `<link rel="alternate" hreflang="x-default" href="${ORIGIN}${BASE_PATH}/${DEFAULT_LANG}/" />`,
+    `<link rel="alternate" hreflang="x-default" href="${ORIGIN}${pagePath(DEFAULT_LANG, page)}" />`,
   );
   return tags.join('\n    ');
 }
 
 function sitemap() {
-  const urls = LANGS.map((lang) => {
-    const alternates = LANGS.map(
-      (other) =>
-        `    <xhtml:link rel="alternate" hreflang="${other}" href="${ORIGIN}${BASE_PATH}/${other}/" />`,
-    ).join('\n');
-    return [
-      '  <url>',
-      `    <loc>${ORIGIN}${BASE_PATH}/${lang}/</loc>`,
-      alternates,
-      '  </url>',
-    ].join('\n');
-  }).join('\n');
+  const entries = [];
+
+  for (const page of PAGES) {
+    for (const lang of LANGS) {
+      const alternates = LANGS.map(
+        (other) =>
+          `    <xhtml:link rel="alternate" hreflang="${other}" href="${ORIGIN}${pagePath(other, page)}" />`,
+      ).join('\n');
+      entries.push(
+        ['  <url>', `    <loc>${ORIGIN}${pagePath(lang, page)}</loc>`, alternates, '  </url>'].join('\n'),
+      );
+    }
+  }
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
     '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-    urls,
+    entries.join('\n'),
     '</urlset>',
     '',
   ].join('\n');

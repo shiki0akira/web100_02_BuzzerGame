@@ -1,76 +1,11 @@
 <!doctype html>
 <html lang="{{htmlLang}}">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- 跟 Homepage / Avalon 同值。這裡不跟著深淺色切換：系列三個專案都是這個值，
-         而且手機工具列變色會比配色不一致更顯眼 -->
-    <meta name="theme-color" content="#252326" />
-    <title>{{seoTitle}}</title>
-    <meta name="description" content="{{seoDesc}}" />
-    <link rel="canonical" href="{{canonical}}" />
-    {{hreflang}}
-
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="{{seoTitle}}" />
-    <meta property="og:description" content="{{seoDesc}}" />
-    <meta property="og:url" content="{{canonical}}" />
-    <meta property="og:locale" content="{{ogLocale}}" />
-
-    <!-- 系列共用的 GA4 資源，跟 Homepage / Avalon 同一個 ID。
-         send_page_view 關掉自動送出，改由 app.js 手動送——這頁的四個畫面
-         共用同一個網址，自動送只會看到一筆，看不出有多少人真的開了房間。 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-S7PE5687BG"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-S7PE5687BG', { send_page_view: false });
-    </script>
-
-    <link rel="icon" href="{{base}}/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="{{base}}/apple-touch-icon.png" />
-
-    <!-- 唯一來源在 web100_00_Homepage，不要把變數複製到這個 repo（ARCHITECTURE.md 第 7 節） -->
-    <link rel="stylesheet" href="https://www.vibeweb100.com/design-tokens.css" />
-    <link rel="stylesheet" href="{{base}}/app.css" />
-
-    <script>
-      // 在畫面畫出來之前決定主題，避免先閃一下另一個配色。
-      // class 掛在 <html> 而不是 <body>：這段跑的時候 <body> 還不存在。
-      // localStorage 的 key 跟系列其他專案一致（web100-theme），不要各專案自己發明。
-      try {
-        var saved = localStorage.getItem('web100-theme');
-        var light = saved ? saved === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
-        if (light) document.documentElement.classList.add('light');
-      } catch (e) {}
-    </script>
+    {{head}}
   </head>
 
   <body>
-    <header class="nav-pill">
-      <div class="nav-left">
-        <a class="brand" href="/" aria-label="Web100">
-          <svg viewBox="4 20 172 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path
-              d="M176 160H127.315C107.994 160 92.3316 144.33 92.3316 125V106.332H103.873V101.667H92.3316V90H87.6684V101.667H76.8814V106.332H87.6684V125C87.6684 144.33 72.0056 160 52.6853 160H4V20H8.95652C28.2768 20.0003 43.9396 35.6702 43.9396 55V90H48.6028V55C48.6028 35.6702 64.2656 20.0003 83.5859 20H96.4141C115.734 20.0003 131.397 35.6702 131.397 55V90H136.06V55C136.06 35.6702 151.723 20.0003 171.043 20H176V160Z"
-            />
-          </svg>
-        </a>
-        <a class="nav-title" href="{{base}}/{{lang}}/">{{navTitle}}</a>
-      </div>
-      <div class="nav-right">
-        <span class="select-wrap">
-          <select id="lang-switch" aria-label="{{langSwitchLabel}}">
-            {{langOptions}}
-          </select>
-        </span>
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="{{themeToggleLabel}}">
-          <svg class="icon icon-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-120q-151 0-255.5-104.5T120-480q0-138 90-239.5T440-838q13-2 23 3.5t16 14.5q6 9 6.5 21t-7.5 23q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q11-7 22.5-6.5T819-479q10 5 15.5 15t3.5 24q-14 138-117.5 229T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
-          <svg class="icon icon-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true"><path d="M565-395q35-35 35-85t-35-85q-35-35-85-35t-85 35q-35 35-35 85t35 85q35 35 85 35t85-35Zm-226.5 56.5Q280-397 280-480t58.5-141.5Q397-680 480-680t141.5 58.5Q680-563 680-480t-58.5 141.5Q563-280 480-280t-141.5-58.5ZM80-440q-17 0-28.5-11.5T40-480q0-17 11.5-28.5T80-520h80q17 0 28.5 11.5T200-480q0 17-11.5 28.5T160-440H80Zm720 0q-17 0-28.5-11.5T760-480q0-17 11.5-28.5T800-520h80q17 0 28.5 11.5T920-480q0 17-11.5 28.5T880-440h-80ZM451.5-771.5Q440-783 440-800v-80q0-17 11.5-28.5T480-920q17 0 28.5 11.5T520-880v80q0 17-11.5 28.5T480-760q-17 0-28.5-11.5Zm0 720Q440-63 440-80v-80q0-17 11.5-28.5T480-200q17 0 28.5 11.5T520-160v80q0 17-11.5 28.5T480-40q-17 0-28.5-11.5ZM226-678l-43-42q-12-11-11.5-28t11.5-29q12-12 29-12t28 12l42 43q11 12 11 28t-11 28q-11 12-27.5 11.5T226-678Zm494 495-42-43q-11-12-11-28.5t11-27.5q11-12 27.5-11.5T734-282l43 42q12 11 11.5 28T777-183q-12 12-29 12t-28-12Zm-42-495q-12-11-11.5-27.5T678-734l42-43q11-12 28-11.5t29 11.5q12 12 12 29t-12 28l-43 42q-12 11-28 11t-28-11ZM183-183q-12-12-12-29t12-28l43-42q12-11 28.5-11t27.5 11q12 11 11.5 27.5T282-226l-42 43q-11 12-28 11.5T183-183Zm297-297Z"/></svg>
-        </button>
-      </div>
-    </header>
+    {{header}}
 
     <main id="main">
       <!-- 首頁：建立房間 / 加入房間 -->
@@ -118,15 +53,7 @@
           </section>
         </div>
 
-        <section class="surface how">
-          <h2>{{howHeading}}</h2>
-          <ol>
-            <li>{{howStep1}}</li>
-            <li>{{howStep2}}</li>
-            <li>{{howStep3}}</li>
-            <li>{{howStep4}}</li>
-          </ol>
-        </section>
+        <p class="rules-link"><a href="{{base}}/{{lang}}/rules/">{{rulesLinkText}}</a></p>
       </section>
 
       <!-- 加入房間：填暱稱 -->
@@ -149,7 +76,10 @@
 
       <!-- 主持人控制台 -->
       <section class="view" id="view-host" hidden>
-        <div class="role-badge">{{hostBadge}}</div>
+        <div class="room-bar">
+          <span class="role-badge">{{hostBadge}}</span>
+          <button class="btn-outline btn-danger" id="close-room" type="button">{{closeRoomButton}}</button>
+        </div>
 
         <section class="surface share">
           <div class="share-code">
@@ -190,7 +120,10 @@
 
       <!-- 玩家：等待 / 搶答 -->
       <section class="view" id="view-play" hidden>
-        <div class="role-badge" id="play-badge">{{playerBadge}}</div>
+        <div class="room-bar">
+          <span class="role-badge">{{playerBadge}}</span>
+          <button class="btn-outline btn-danger" id="leave-room" type="button">{{leaveRoomButton}}</button>
+        </div>
 
         <section class="surface play-status">
           <h1 id="play-title">{{waitingTitle}}</h1>
@@ -224,19 +157,34 @@
 
     <div class="conn-banner" id="conn-banner" role="status" hidden></div>
 
-    <footer class="site-footer">
-      <div class="footer-left">
-        <a href="/">← Web100</a>
-        <span class="project-id">{{projectId}}</span>
+    <!-- 離開／關閉房間的確認。用原生 <dialog>：焦點鎖定、Esc 關閉都不用自己寫，
+         Esc 等同「取消」，正好是這裡想要的行為 -->
+    <dialog class="modal" id="confirm-dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-desc"></p>
+      <div class="modal-actions">
+        <button class="btn-outline" id="confirm-cancel" type="button">{{cancelButton}}</button>
+        <button class="btn-solid" id="confirm-ok" type="button"></button>
       </div>
-      <span>© 2026 Web100 Series</span>
-    </footer>
+    </dialog>
+
+    <!-- 主持人關掉房間時，玩家看到的通知。只有一顆按鈕，按了回搶答首頁 -->
+    <dialog class="modal" id="closed-dialog">
+      <h2>{{roomClosedTitle}}</h2>
+      <p>{{roomClosedDesc}}</p>
+      <div class="modal-actions">
+        <button class="btn-solid" id="closed-ok" type="button">{{backHome}}</button>
+      </div>
+    </dialog>
+
+    {{footer}}
 
     <script src="{{base}}/vendor/qrcode.js"></script>
     <script>
       window.T = {{stringsJson}};
-      window.BUZZER = { lang: '{{lang}}', base: '{{base}}' };
+      window.BUZZER = { lang: '{{lang}}', base: '{{base}}', page: '' };
     </script>
+    <script src="{{base}}/header.js"></script>
     <script src="{{base}}/app.js"></script>
   </body>
 </html>
