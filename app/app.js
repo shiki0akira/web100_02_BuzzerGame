@@ -16,6 +16,12 @@
   var LANG = window.BUZZER.lang;
   var BASE = window.BUZZER.base;
 
+  // 正式網域上的頁面是 Vercel rewrite 代理過來的，WebSocket 過不了那層代理，
+  // 所以 API 與 WebSocket 都直連 Worker 自己的網址（Worker 有開對應的 CORS）。
+  // 本機開發、區網測試、直接開 workers.dev 都維持同源，不受影響。
+  var API_ORIGIN =
+    location.origin === window.BUZZER.siteOrigin ? window.BUZZER.workerOrigin : location.origin;
+
   var CLIENT_KEY = 'web100-buzzer-client';
   var ROOM_KEY_PREFIX = 'web100-buzzer-room-';
 
@@ -206,7 +212,7 @@
     button.disabled = true;
     button.textContent = T.creating;
 
-    fetch(BASE + '/api/rooms', {
+    fetch(API_ORIGIN + BASE + '/api/rooms', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ maxPlayers: maxPlayers, hostId: clientId() }),
@@ -297,8 +303,9 @@
 
     showBanner(T.connecting);
 
-    var url = new URL(BASE + '/api/rooms/' + roomCode + '/ws', location.href);
-    url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var url = new URL(BASE + '/api/rooms/' + roomCode + '/ws', API_ORIGIN);
+    // 依 API 那端的協定決定，不是依當前頁面——兩者在正式網域上是不同的主機
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     socket = new WebSocket(url.toString());
 
     socket.onopen = function () {

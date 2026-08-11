@@ -27,15 +27,26 @@ const MAX_CREATE_ATTEMPTS = 5;
 const MIN_PLAYERS = 2;
 const MAX_PLAYERS = 30;
 
+// 正式網域上的頁面由 Vercel 代理過來，但 API 與 WebSocket 是直連這個 Worker，
+// 所以建房那支 POST 會是跨來源請求，要放行。只放行正式網域，不用 *。
+// WebSocket 不受 CORS 規範，這裡只影響 fetch。
+const ALLOWED_ORIGINS = ['https://www.vibeweb100.com'];
+
 const ROOM_PATH = new RegExp(`^${BASE}/api/rooms/([A-Z0-9]{${CODE_LENGTH}})(/ws)?$`);
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const cors = corsHeaders(request);
+
+    // 跨來源的 POST 會先送 preflight，擋掉的話建房會直接失敗
+    if (request.method === 'OPTIONS' && url.pathname.startsWith(`${BASE}/api/`)) {
+      return new Response(null, { status: 204, headers: cors });
+    }
 
     if (url.pathname === `${BASE}/api/rooms`) {
       if (request.method !== 'POST') return methodNotAllowed('POST');
-      return createRoom(request, env);
+      return withCors(await createRoom(request, env), cors);
     }
 
     const room = url.pathname.match(ROOM_PATH);
@@ -44,7 +55,11 @@ export default {
       if (request.method !== 'GET') return methodNotAllowed('GET');
       const stub = env.ROOM.get(env.ROOM.idFromName(code));
       // 用原本的 request 當 init，Upgrade 之類的標頭才會一起帶進 Durable Object
-      return stub.fetch(new Request(isWs ? 'https://room/ws' : 'https://room/info', request));
+      const response = await stub.fetch(
+        new Request(isWs ? 'https://room/ws' : 'https://room/info', request),
+      );
+      // 101 的回應不能碰（webSocket 要原樣傳回去），也不需要 CORS
+      return isWs ? response : withCors(response, cors);
     }
 
     if (url.pathname === BASE || url.pathname === `${BASE}/`) {
@@ -129,6 +144,25 @@ function pickLang(request) {
     if (base) return base;
   }
   return DEFAULT_LANG;
+}
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin');
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'content-type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
+
+function withCors(response, cors) {
+  if (!Object.keys(cors).length) return response;
+  const merged = new Response(response.body, response);
+  for (const [key, value] of Object.entries(cors)) merged.headers.set(key, value);
+  return merged;
 }
 
 function json(body, status = 200) {

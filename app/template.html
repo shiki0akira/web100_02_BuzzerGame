@@ -209,7 +209,13 @@
     <script src="{{base}}/vendor/qrcode.js"></script>
     <script>
       window.T = {{stringsJson}};
-      window.BUZZER = { lang: '{{lang}}', base: '{{base}}', page: '' };
+      window.BUZZER = {
+        lang: '{{lang}}',
+        base: '{{base}}',
+        page: '',
+        siteOrigin: '{{siteOrigin}}',
+        workerOrigin: '{{workerOrigin}}',
+      };
     </script>
     <script src="{{base}}/header.js"></script>
     <script src="{{base}}/app.js"></script>

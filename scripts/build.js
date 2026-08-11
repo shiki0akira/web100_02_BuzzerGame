@@ -19,6 +19,7 @@ import {
   LOCALE_LABELS,
   STRINGS,
   ORIGIN,
+  WORKER_ORIGIN,
   BASE_PATH,
   PROJECT_ID,
 } from '../app/strings.js';
@@ -130,6 +131,8 @@ function tokensFor(lang, page) {
     langOptions: langOptions(lang),
     base: BASE_PATH,
     projectId: PROJECT_ID,
+    siteOrigin: ORIGIN,
+    workerOrigin: WORKER_ORIGIN,
     // head partial 用的是通用名稱，各頁面把自己的 title/description 餵進去
     pageTitle: strings[page.titleKey],
     pageDesc: strings[page.descKey],

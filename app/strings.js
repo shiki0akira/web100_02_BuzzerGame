@@ -39,6 +39,13 @@ export const LOCALE_LABELS = {
 };
 
 export const ORIGIN = 'https://www.vibeweb100.com';
+
+// 正式網域上的頁面是首頁的 vercel.json rewrite 代理過來的，而 Vercel 代理外部網址時
+// 對 WebSocket 升級的支援不可靠——所以 API 與 WebSocket 一律直連 Worker 自己的網址，
+// 只有 HTML/CSS/JS 走代理。本機開發與直接開 workers.dev 時仍然是同源，不受影響。
+// 之後改由 Cloudflare Worker 路由總機接管正式網域時，這一條就可以拿掉。
+export const WORKER_ORIGIN = 'https://web100-02-buzzer-game.shiki0akira.workers.dev';
+
 export const BASE_PATH = '/buzzer';
 export const PROJECT_ID = '02_BuzzerGame';
 

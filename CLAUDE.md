@@ -17,7 +17,19 @@
 - Cloudflare Workers（不是 Vercel）。需要 WebSocket 長連線，Vercel 的 serverless function 撐不住，這是 `ARCHITECTURE.md` 第 4 節就定好的分流
 - `npm run dev` = 先 build 再 `wrangler dev`；`npm run deploy` 同理
 - `dist/` 是建置產物，不進版控。**Windows 上 `wrangler dev` 開著時會鎖住 `dist/`**，所以 `scripts/build.js` 的清空步驟遇到 EBUSY/EPERM 會警告後繼續覆寫，不讓 build 失敗
-- 正式網域接進來的方式跟阿瓦隆一樣：先由 `web100_00_Homepage` 的 `vercel.json` rewrite `/buzzer/*` 代理過來，之後改由 Cloudflare Worker 路由總機接管
+### 正式網域的接法：網頁走代理、API 與 WebSocket 直連
+
+跟阿瓦隆**不一樣**，這點最容易踩雷：
+
+- 網頁（HTML/CSS/JS）由 `web100_00_Homepage` 的 `vercel.json` rewrite 代理過來
+- **API 與 WebSocket 不走代理**，客戶端直接連 `web100-02-buzzer-game.shiki0akira.workers.dev`
+
+因為 `www.vibeweb100.com` 是 CNAME 指向 Vercel、沒有走 Cloudflare 代理，而 Vercel 代理外部網址時對 WebSocket 升級的支援不可靠——靜態頁過得去，長連線不一定。
+
+- 判斷在 `app/app.js` 的 `API_ORIGIN`：**只有**頁面從正式網域載入時才跨過去，本機開發、區網測試、直接開 workers.dev 都維持同源
+- 因為變成跨來源，`src/worker.js` 對正式網域開了 CORS（`ALLOWED_ORIGINS`）並處理 OPTIONS preflight。加新的 API 路徑時記得一起帶上 `withCors`
+- WebSocket 的 101 回應**不要**加 CORS 標頭也不要包裝，要原樣傳回去，否則 `webSocket` 屬性會掉
+- 等 Cloudflare Worker 路由總機做好、網域改由 Cloudflare 代理，這整段繞道就可以拿掉
 
 ## 這個 Worker 只擁有 `/buzzer/*`
 
