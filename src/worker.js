@@ -15,7 +15,8 @@ import { BuzzerRoom } from './room.js';
 export { BuzzerRoom };
 
 const BASE = '/buzzer';
-const LANGS = ['zh-TW', 'en'];
+// 跟 app/strings.js 的 LANGS 與首頁的 SUPPORTED_LANGS 一致，三邊要一起改
+const LANGS = ['zh-TW', 'en', 'de', 'fr', 'ja', 'ko', 'es', 'zh-CN'];
 const DEFAULT_LANG = 'zh-TW';
 
 // 去掉 0/O/1/I/L：房間代碼會被唸出來、也會被手動輸入，形近字一定會有人打錯
@@ -113,11 +114,19 @@ function pickLang(request) {
   for (const part of header.split(',')) {
     const tag = part.split(';')[0].trim().toLowerCase();
     if (!tag) continue;
-    const match = LANGS.find((lang) => lang.toLowerCase() === tag);
-    if (match) return match;
-    // zh-HK / zh-MO 這類繁體變體歸到 zh-TW，其餘 zh-* 不猜，交給下面的預設值
-    if (tag === 'zh-hk' || tag === 'zh-mo' || tag === 'zh') return 'zh-TW';
-    if (tag.startsWith('en-')) return 'en';
+
+    const exact = LANGS.find((lang) => lang.toLowerCase() === tag);
+    if (exact) return exact;
+
+    // 中文要看地區才知道要繁體還是簡體，不能只看 zh 前綴
+    if (tag.startsWith('zh')) {
+      if (tag === 'zh-cn' || tag === 'zh-sg' || tag === 'zh-hans') return 'zh-CN';
+      return 'zh-TW'; // zh-HK / zh-MO / 單一個 zh 都給繁體
+    }
+
+    // de-AT、fr-CA、es-MX 這類地區變體歸到主要語言
+    const base = LANGS.find((lang) => !lang.includes('-') && tag.startsWith(lang + '-'));
+    if (base) return base;
   }
   return DEFAULT_LANG;
 }

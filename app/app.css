@@ -178,6 +178,15 @@ h2 {
   white-space: nowrap;
 }
 
+/* 窄螢幕上導覽列右側有規則、語言、深淺色三個控制項，600px 的膠囊縮到 343px 之後
+   標題被擠到寬度 0——與其留一個看不出是什麼的截斷字，不如整個收起來。
+   左上的標誌一樣連回首頁，頁面的 h1 也說明了這是什麼工具，資訊沒有少。 */
+@media (max-width: 560px) {
+  .nav-title {
+    display: none;
+  }
+}
+
 /* 語言下拉：外觀是外框式（透明底 + 描邊 + 跟頁面同色的文字），但**不套 .btn-outline**。
    .btn-outline 帶 display: inline-flex，套在 <select> 上會讓原生下拉的位置與高度算不準。
    規則、尺寸、hover 行為都跟 web100_00_Homepage 的導覽列一致。 */
@@ -841,6 +850,45 @@ textarea.field {
    免得使用者以為沒送出去而一直重按 */
 .buzz-button.buzzed {
   opacity: 0.72;
+}
+
+/* 倒數中：數字直接長在按鈕上，比另外放一塊倒數更不用移動視線。
+   每一秒放大一次再縮回去，餘光也看得出來又過了一秒。 */
+.buzz-button.counting {
+  font-size: clamp(3rem, 22vw, 6rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.buzz-button.counting #buzz-label {
+  display: block;
+  animation: countdown-pulse 1s ease-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0% {
+    transform: scale(1.25);
+    opacity: 0.55;
+  }
+  35% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 主持人端的倒數：小小一行就好，主角是玩家那顆鈕 */
+.host-countdown {
+  margin: var(--space-2) 0 0;
+  color: var(--color-accent-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.host-countdown[hidden] {
+  display: none;
 }
 
 /* ---------- 連線狀態 ---------- */

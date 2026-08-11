@@ -11,6 +11,9 @@
  */
 
 const IDLE_MS = 3 * 60 * 60 * 1000; // 3 小時沒有人動作就清空房間
+// 「開始搶答」之後先倒數，大家才有一致的起跑點——不然先看到題目的人佔便宜。
+// 由伺服器擋掉倒數期間的搶答，客戶端的計時只負責畫面，快個幾十毫秒也搶不到。
+const COUNTDOWN_MS = 3000;
 const MAX_QUESTION_LENGTH = 500;
 const MAX_NICKNAME_LENGTH = 16;
 
@@ -60,6 +63,7 @@ export class BuzzerRoom {
       started: false,
       currentQuestion: '',
       buzzStartedAt: null,
+      buzzOpensAt: null, // 倒數結束、真正可以搶答的時刻
       players: {}, // { [playerId]: { nickname, joinedAt } }
       buzzOrder: [], // [{ playerId, nickname, timestamp, ms }]
     };
@@ -193,6 +197,7 @@ export class BuzzerRoom {
     // 送出新題目等於開新的一輪，把上一輪的排名清掉
     room.buzzOrder = [];
     room.buzzStartedAt = null;
+    room.buzzOpensAt = null;
     room.status = room.currentQuestion ? 'question_shown' : 'waiting';
 
     await this.saveRoom({ touch: true });
@@ -207,7 +212,10 @@ export class BuzzerRoom {
       room.currentQuestion = msg.text.slice(0, MAX_QUESTION_LENGTH);
     }
     room.status = 'buzzing';
-    room.buzzStartedAt = Date.now();
+    // 排名的時間差從「倒數結束」起算，不是從按下開始搶答起算，
+    // 這樣第一名的 +0.32 秒才是真的反應時間
+    room.buzzOpensAt = Date.now() + COUNTDOWN_MS;
+    room.buzzStartedAt = room.buzzOpensAt;
     room.buzzOrder = [];
 
     await this.saveRoom({ touch: true });
@@ -219,6 +227,10 @@ export class BuzzerRoom {
     // buzzed 也接受：第一個人按完之後其他人還能繼續按，排名榜要排到最後一名
     if (room.status !== 'buzzing' && room.status !== 'buzzed') {
       return this.sendError(ws, 'not_buzzing');
+    }
+    // 倒數還沒結束就按，一律不算——搶跑的人不會因為手快而拿到第一
+    if (room.buzzOpensAt && Date.now() < room.buzzOpensAt) {
+      return this.sendError(ws, 'too_early');
     }
     // 同一輪同一個人只記一次，重複點擊直接忽略（不回錯誤，客戶端本來就允許一直按）
     if (room.buzzOrder.some((e) => e.playerId === who.clientId)) return;
@@ -243,6 +255,7 @@ export class BuzzerRoom {
     room.status = 'waiting';
     room.buzzOrder = [];
     room.buzzStartedAt = null;
+    room.buzzOpensAt = null;
 
     await this.saveRoom({ touch: true });
     this.broadcast(room);
@@ -382,6 +395,9 @@ function publicState(room, online) {
     maxPlayers: room.maxPlayers,
     status: room.status,
     started: room.started,
+    // 剩餘倒數毫秒數。用「還剩多久」而不是絕對時刻，客戶端就不需要跟伺服器對時，
+    // 中途才連上來的人也會拿到正確的剩餘時間
+    countdownMs: room.buzzOpensAt ? Math.max(0, room.buzzOpensAt - Date.now()) : 0,
     question: room.currentQuestion,
     hostOnline: online.has(room.hostId),
     players: Object.entries(room.players)

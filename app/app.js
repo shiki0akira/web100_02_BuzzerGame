@@ -36,6 +36,8 @@
   var questionSynced = false; // 主持人重整後只從伺服器補一次題目，之後以他正在打的內容為準
   var renderedQrUrl = null;
   var currentView = null;
+  var countdownDeadline = 0; // 本機時鐘上的倒數結束時刻
+  var countdownTimer = null;
 
   var el = {};
 
@@ -81,6 +83,7 @@
       'share-card', 'question-card', 'host-rank-card',
       'start-game-block', 'start-game', 'start-game-error',
       'play-lobby-card', 'play-player-count', 'play-player-list', 'play-rank-card',
+      'host-countdown',
     ].forEach(function (id) {
       el[id] = document.getElementById(id);
     });
@@ -340,6 +343,9 @@
 
     if (msg.t === 'state') {
       lastState = msg.state;
+      // 只在收到新狀態時對齊倒數。lastState 是快照，countdownMs 一寫下來就開始過期——
+      // 從 render() 裡重讀會在倒數結束時又把它接回 3 秒，變成無限循環
+      syncCountdown(lastState.countdownMs || 0);
       render();
       return;
     }
@@ -392,6 +398,56 @@
 
   /* ---------- 畫面 ---------- */
 
+  /* ---------- 倒數 ---------- */
+
+  // 每次收到狀態都用伺服器給的「剩餘毫秒」重新對齊本機的截止時刻，
+  // 不需要跟伺服器對時，中途連上來的人也會拿到正確的剩餘時間。
+  // 中間的每一格由本機計時器畫，不用一直跟伺服器要。
+  function syncCountdown(remainingMs) {
+    if (remainingMs > 0) {
+      countdownDeadline = Date.now() + remainingMs;
+      if (!countdownTimer) countdownTimer = setInterval(onCountdownTick, 100);
+    } else {
+      stopCountdown();
+    }
+  }
+
+  function stopCountdown() {
+    countdownDeadline = 0;
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }
+
+  function onCountdownTick() {
+    if (countdownLeft() > 0) {
+      paintCountdown();
+      return;
+    }
+    // 倒數結束，重畫一次讓按鈕解鎖
+    stopCountdown();
+    render();
+  }
+
+  function countdownLeft() {
+    return Math.max(0, countdownDeadline - Date.now());
+  }
+
+  // 顯示用的秒數：剩 2100ms 要顯示 3，剩 100ms 要顯示 1，所以無條件進位
+  function countdownSeconds() {
+    return Math.ceil(countdownLeft() / 1000);
+  }
+
+  function paintCountdown() {
+    if (!me) return;
+    if (me.role === 'player') {
+      el['buzz-label'].textContent = countdownSeconds();
+    } else {
+      el['host-countdown'].textContent = t('hostCountdown', { n: countdownSeconds() });
+    }
+  }
+
   function render() {
     if (!lastState || !me) return;
     if (me.role === 'host') {
@@ -437,6 +493,11 @@
     el['show-question'].disabled = state.status === 'buzzing';
     el['start-buzz'].disabled = state.status === 'buzzing';
     el['reset-round'].disabled = state.status === 'waiting';
+
+    // 主持人也要看得到倒數，才知道什麼時候可以停止說話
+    var counting = countdownLeft() > 0;
+    el['host-countdown'].hidden = !counting;
+    if (counting) paintCountdown();
 
     renderRanks(el['host-rank-list'], el['host-rank-empty'], state.buzzOrder);
   }
@@ -528,8 +589,20 @@
     el['play-question'].hidden = !state.question;
     el['play-question-text'].textContent = state.question;
 
+    // 倒數期間按鈕鎖住，數字直接長在按鈕上——視線本來就在那顆鈕上，
+    // 數字放別的地方會讓人在倒數最後一秒還要移動視線
+    var counting = countdownLeft() > 0;
+    if (counting) {
+      el['play-title'].textContent = T.countdownTitle;
+      el['play-desc'].textContent = T.countdownDesc;
+      paintCountdown();
+    } else {
+      el['buzz-label'].textContent = T.buzzButton;
+    }
+
     // 已經搶答過還是可以按（規格要求不鎖死畫面），只是視覺上退一階
-    el['buzz'].disabled = !open;
+    el['buzz'].disabled = !open || counting;
+    el['buzz'].classList.toggle('counting', counting);
     el['buzz'].classList.toggle('buzzed', myPlace > 0);
 
     renderRanks(el['play-rank-list'], el['play-rank-empty'], state.buzzOrder);
