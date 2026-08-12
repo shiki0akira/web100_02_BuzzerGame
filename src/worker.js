@@ -63,7 +63,13 @@ export default {
     }
 
     if (url.pathname === BASE || url.pathname === `${BASE}/`) {
-      return Response.redirect(new URL(`${BASE}/${pickLang(request)}/`, url).toString(), 302);
+      // Location 給相對路徑，不要組絕對網址。正式網域上這個 Worker 看到的 host 是
+      // workers.dev（請求是 Vercel 代理進來的），組絕對網址會把使用者踢出主網域，
+      // Google 也會看成跨網域轉址。相對路徑會留在當下這個 host 上。
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${BASE}/${pickLang(request)}/`, Vary: 'Accept-Language, Cookie' },
+      });
     }
 
     return new Response('Not found', { status: 404 });
