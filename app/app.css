@@ -178,14 +178,17 @@ h2 {
   white-space: nowrap;
 }
 
-/* 窄螢幕上導覽列右側有規則、語言、深淺色三個控制項，600px 的膠囊縮到 343px 之後
-   標題被擠到寬度 0——與其留一個看不出是什麼的截斷字，不如整個收起來。
-   左上的標誌一樣連回首頁，頁面的 h1 也說明了這是什麼工具，資訊沒有少。 */
-@media (max-width: 560px) {
+/* 420px 是量出來的臨界點：導覽列扣掉標誌、規則、語言下拉（此時已縮到 124）、
+   深淺色鈕與間距之後，剛好還能給標題 4 個中文字的寬度。再窄下去只會剩
+   「現…」這種看不出是什麼的殘字，那還不如不顯示——標誌一樣連回首頁，
+   頁面的 h1 也說明了這是什麼工具。
+   ⚠️ 別把這個值往上調：460px 那種明明還有一百多 px 空間的寬度也會被藏掉。 */
+@media (max-width: 420px) {
   .nav-title {
     display: none;
   }
 }
+
 
 /* 語言下拉：外觀是外框式（透明底 + 描邊 + 跟頁面同色的文字），但**不套 .btn-outline**。
    .btn-outline 帶 display: inline-flex，套在 <select> 上會讓原生下拉的位置與高度算不準。
@@ -207,6 +210,18 @@ select {
   appearance: none;
   -webkit-appearance: none;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* 窄螢幕上把語言下拉縮窄，讓標題留得住。跟阿瓦隆一樣標題一律顯示、
+   放不下才用 ellipsis 截斷——之前用斷點把標題整個隱藏，結果 460px 這種
+   明明還剩一百多 px 的寬度也看不到標題，導覽列左邊空一塊。
+   124px 是量出來的下限：最長的選項是 Français，扣掉左右內距剛好放得下。
+   ⚠️ 這段一定要放在上面 `select` 基礎規則之後，同分特異性靠順序決勝，
+   放前面會被 width: 140px 蓋掉（踩過一次）。 */
+@media (max-width: 520px) {
+  select {
+    width: 124px;
+  }
 }
 
 .select-wrap {
