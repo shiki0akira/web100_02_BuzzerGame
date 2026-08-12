@@ -66,6 +66,18 @@
 - 導覽列刻意做成跟阿瓦隆一樣：品牌圓鈕 + 標題 + 語言下拉（`<select>`，顯示語言自己的名字）+ 主題圓鈕，寬 600、高 40 的控制項
 - 按鈕的立體／壓扁語言、disabled 的配色都照 `ARCHITECTURE.md` 第 7 節，不要改成疊 `opacity`
 
+## GA4
+
+測量 ID `G-S7PE5687BG`，跟首頁、阿瓦隆共用同一個資源。
+
+- `send_page_view: false`，改由 `app.js` 在**畫面切換**時手動送。四個畫面共用同一個網址，靠自動送只會記到一筆，分不出多少人真的開了房間。路徑是 `/buzzer/{lang}/{home|join|host|play|error}`，規則頁是 `/buzzer/{lang}/rules/`
+- 自訂事件一律加 **`buzzer_` 前綴**（阿瓦隆是 `avalon_`）——整個系列共用一個 GA4 資源，沒有前綴就分不出是哪個遊戲的
+- **事件只在「做那個動作的那台裝置」上送**。狀態是廣播給全場的，照著狀態送的話，一場 10 個人的遊戲會把同一個事件記 10 次
+- `buzzer_player_joined` 只算第一次（`joinReported`），`welcome` 每次重連都會來
+- `buzzer_buzzed` 等伺服器把名次算回來才送，按了但被判 `too_early` 的不算；一輪一次，回合重置時解鎖（`buzzReported`）
+
+事件清單：`buzzer_room_created`（`max_players`）、`buzzer_player_joined`、`buzzer_game_started`（`player_count`）、`buzzer_round_started`、`buzzer_buzzed`（`place`）、`buzzer_room_closed`。
+
 ## SEO
 
 - `sitemap.xml` 由 build 自動產生在 `/buzzer/sitemap.xml`，不用手動維護

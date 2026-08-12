@@ -44,6 +44,8 @@
   var currentView = null;
   var countdownDeadline = 0; // 本機時鐘上的倒數結束時刻
   var countdownTimer = null;
+  var joinReported = false; // GA4 的加入事件只算第一次，重連不重複計
+  var buzzReported = false; // 這一輪的搶答事件是否已經送過
 
   var el = {};
 
@@ -157,6 +159,16 @@
     window.trackPageView(BASE + '/' + LANG + '/' + name);
   }
 
+  // GA4 自訂事件一律加 buzzer_ 前綴，跟阿瓦隆的 avalon_ 一樣——
+  // 整個系列共用同一個 GA4 資源，沒有前綴就分不出是哪個遊戲的資料。
+  //
+  // 只在「動作的那台裝置」上送：狀態是廣播給全場的，如果照著狀態送，
+  // 一場 10 個人的遊戲會把同一個事件記 10 次。
+  function track(name, params) {
+    if (typeof gtag !== 'function') return;
+    gtag('event', name, params || {});
+  }
+
   function showFieldError(node, message) {
     node.textContent = message;
     node.hidden = false;
@@ -222,6 +234,7 @@
         return res.json();
       })
       .then(function (data) {
+        track('buzzer_room_created', { max_players: maxPlayers });
         enterRoom(data.code, true);
       })
       .catch(function () {
@@ -343,7 +356,14 @@
 
     if (msg.t === 'welcome') {
       me = msg.you;
-      if (me.role === 'player' && me.nickname) saveRoomNickname(roomCode, me.nickname);
+      if (me.role === 'player' && me.nickname) {
+        saveRoomNickname(roomCode, me.nickname);
+        // welcome 在每次重連都會來，只算第一次，不然斷線多的場次會灌水
+        if (!joinReported) {
+          joinReported = true;
+          track('buzzer_player_joined');
+        }
+      }
       hideBanner();
       return;
     }
@@ -565,6 +585,15 @@
       }
     }
 
+    // 等伺服器把名次算回來才送事件，按了但被判太早（too_early）的不算。
+    // 一輪只送一次，回合重置時解鎖。
+    if (myPlace > 0 && !buzzReported) {
+      buzzReported = true;
+      track('buzzer_buzzed', { place: myPlace });
+    } else if (state.status === 'waiting' || state.status === 'question_shown') {
+      buzzReported = false;
+    }
+
     // 開始遊戲前：看得到還有誰在，但沒有搶答鍵也沒有排名榜
     el['play-lobby-card'].hidden = state.started;
     el['buzz'].hidden = !state.started;
@@ -665,6 +694,7 @@
         return;
       }
       hideFieldError(el['start-game-error']);
+      track('buzzer_game_started', { player_count: lastState.players.length });
       send({ t: 'startGame' });
     });
 
@@ -674,6 +704,7 @@
 
     el['start-buzz'].addEventListener('click', function () {
       // 主持人可能沒先按「送出題目」就直接開搶答，題目一起帶過去
+      track('buzzer_round_started');
       send({ t: 'start', text: el['question'].value });
     });
 
@@ -706,6 +737,7 @@
       askConfirm(T.closeConfirmTitle, T.closeConfirmDesc, T.closeRoomButton, function () {
         // 不等伺服器回覆就離開：房間關掉之後這條連線本來就會斷，
         // 停在原地等只會讓主持人看到一瞬間的「重新連線中」
+        track('buzzer_room_closed');
         send({ t: 'close' });
         goHome();
       });
