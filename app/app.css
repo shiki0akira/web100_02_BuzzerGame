@@ -928,18 +928,24 @@ textarea.field {
 
 /* ---------- 頁尾 ---------- */
 
+/* 分隔線要滿版，跟阿瓦隆與首頁一致：<footer> 本身不限寬、只負責上緣那條線，
+   內容再用一層 .footer-inner 收到跟主內容一樣的寬度並置中。
+   把寬度限制下在 <footer> 上的話，線會跟著縮成內容寬度，兩側留白。 */
 .site-footer {
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-2);
   border-top: 1px solid var(--color-accent);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.footer-inner {
   width: min(720px, calc(100% - 2rem));
   margin-inline: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
 }
 
 .footer-left {
@@ -965,7 +971,7 @@ textarea.field {
 }
 
 @media (max-width: 640px) {
-  .site-footer {
+  .footer-inner {
     flex-direction: column;
     gap: var(--space-1);
   }
