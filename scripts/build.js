@@ -23,13 +23,14 @@ import {
   BASE_PATH,
   PROJECT_ID,
 } from '../app/strings.js';
+import { AVATARS } from '../app/avatars.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const outBase = join(dist, BASE_PATH.replace(/^\//, ''));
 
 // 這幾個 token 是直接塞 HTML / JSON，不做跳脫；其餘一律當純文字處理
-const RAW_TOKENS = new Set(['hreflang', 'stringsJson', 'langOptions']);
+const RAW_TOKENS = new Set(['hreflang', 'stringsJson', 'avatarsJson', 'langOptions']);
 
 // dir 是語言後面的路徑：遊戲頁在 /buzzer/{lang}/、規則頁在 /buzzer/{lang}/rules/
 const PAGES = [
@@ -139,6 +140,9 @@ function tokensFor(lang, page) {
     canonical: ORIGIN + pagePath(lang, page),
     hreflang: hreflangTags(page),
     stringsJson: toScriptJson(strings),
+    // 頭像跟語言無關，各語言的頁面內嵌同一份。整包約 6KB，
+    // 比讓 10 個圖示各發一次請求划算，而且名單與排名榜會重複用上幾十次
+    avatarsJson: toScriptJson(AVATARS),
   };
 }
 

@@ -57,6 +57,7 @@ export default {
   "rulesBackToGame": "Jetzt spielen",
   "joinTitle": "Raum beitreten",
   "nicknameLabel": "Dein Spitzname",
+  "avatarLabel": "Wähle ein Bild",
   "nicknamePlaceholder": "Hauptsache, die anderen erkennen dich",
   "enterButton": "Raum betreten",
   "hostBadge": "Spielleitung",

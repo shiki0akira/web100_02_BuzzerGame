@@ -53,6 +53,9 @@
 
   function init() {
     cacheElements();
+    // 頭像要在畫選擇器之前決定：沒挑過的人用 clientId 推一個，不會每次重整換一張臉
+    currentAvatar = readProfile().avatar || defaultAvatar();
+    renderAvatarPicker();
     // 深淺色與語言切換在 header.js（規則頁也要用），這裡只管遊戲本身
     bindHome();
     bindJoin();
@@ -77,7 +80,7 @@
     [
       'view-home', 'view-join', 'view-host', 'view-play', 'view-error',
       'max-players', 'create-room', 'create-error', 'join-code', 'join-room', 'join-error',
-      'join-title', 'nickname', 'enter-room', 'nickname-error',
+      'join-title', 'avatar-picker', 'nickname', 'enter-room', 'nickname-error',
       'host-room-code', 'share-url', 'copy-link', 'qr-box',
       'player-count', 'player-list', 'player-empty',
       'question', 'show-question', 'start-buzz', 'reset-round',
@@ -131,6 +134,81 @@
       writeStore(CLIENT_KEY, id);
     }
     return id;
+  }
+
+  /*
+   * 暱稱與頭像存成一份 profile，key 跟系列其他專案共用（喜好二選一也讀同一份），
+   * 下次進任何一個 Web100 遊戲都不用重挑。不做帳號系統：現場遊戲的人就在同一個房間裡，
+   * 帳號只會在「免下載免註冊」這個賣點上加摩擦。
+   */
+  var PROFILE_KEY = 'web100-profile';
+  var currentAvatar = '';
+
+  function readProfile() {
+    try {
+      return JSON.parse(readStore(PROFILE_KEY) || 'null') || {};
+    } catch (e) {
+      return {}; // 存壞了就當作沒有
+    }
+  }
+
+  function saveProfile(nickname) {
+    writeStore(PROFILE_KEY, JSON.stringify({ nickname: nickname, avatar: currentAvatar }));
+  }
+
+  // 沒選過的人也要有頭像，用 clientId 決定，同一個人每次進來都是同一張臉
+  function defaultAvatar() {
+    var id = clientId();
+    var hash = 0;
+    for (var i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+    return window.AVATARS[hash % window.AVATARS.length].id;
+  }
+
+  function avatarSvg(id, size) {
+    var found = null;
+    for (var i = 0; i < window.AVATARS.length; i += 1) {
+      if (window.AVATARS[i].id === id) found = window.AVATARS[i];
+    }
+    // 伺服器不驗證頭像 id（見 src/room.js 的 cleanAvatar），對不到就退回第一個
+    if (!found) found = window.AVATARS[0];
+
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'avatar');
+    svg.setAttribute('viewBox', '0 0 64 64');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    svg.innerHTML = '<rect width="64" height="64" fill="' + found.bg + '"/>' + found.svg;
+    return svg;
+  }
+
+  function renderAvatarPicker() {
+    var picker = el['avatar-picker'];
+    picker.replaceChildren();
+
+    window.AVATARS.forEach(function (avatar, index) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'avatar-option';
+      button.setAttribute('role', 'radio');
+      button.dataset.avatar = avatar.id;
+      button.setAttribute('aria-checked', String(avatar.id === currentAvatar));
+      button.setAttribute('aria-label', T.avatarLabel + ' ' + (index + 1));
+      button.append(avatarSvg(avatar.id, 56));
+      button.addEventListener('click', function () {
+        selectAvatar(avatar.id);
+      });
+      picker.append(button);
+    });
+  }
+
+  function selectAvatar(id) {
+    currentAvatar = id;
+    var options = el['avatar-picker'].querySelectorAll('[data-avatar]');
+    for (var i = 0; i < options.length; i += 1) {
+      options[i].setAttribute('aria-checked', String(options[i].dataset.avatar === id));
+    }
   }
 
   function readRoomNickname(code) {
@@ -286,6 +364,7 @@
     hideFieldError(el['nickname-error']);
     pendingNickname = nickname;
     saveRoomNickname(roomCode, nickname);
+    saveProfile(nickname);
 
     // 連線還在，重送一次 hello 就好；斷了才重連
     if (isOpen()) sendHello();
@@ -343,7 +422,7 @@
   }
 
   function sendHello() {
-    send({ t: 'hello', clientId: clientId(), nickname: pendingNickname });
+    send({ t: 'hello', clientId: clientId(), nickname: pendingNickname, avatar: currentAvatar });
   }
 
   function handleMessage(raw) {
@@ -541,7 +620,7 @@
       var name = document.createElement('span');
       name.className = 'name';
       name.textContent = player.nickname;
-      item.append(name);
+      item.append(avatarSvg(player.avatar, 32), name);
 
       if (!player.online) {
         var tag = document.createElement('span');
@@ -661,7 +740,7 @@
       name.className = 'name';
       name.textContent = entry.nickname;
 
-      item.append(place, name);
+      item.append(place, avatarSvg(entry.avatar, 28), name);
 
       if (entry.ms !== null && entry.ms !== undefined) {
         var delta = document.createElement('span');

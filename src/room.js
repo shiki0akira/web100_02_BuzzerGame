@@ -166,10 +166,16 @@ export class BuzzerRoom {
       if (!known && Object.keys(room.players).length >= room.maxPlayers) {
         return this.sendError(ws, 'room_full', true);
       }
-      room.players[clientId] = { nickname, joinedAt: known?.joinedAt ?? Date.now() };
-      // 改暱稱時，這一輪已經寫進 buzzOrder 的紀錄要一起改，排名榜才不會留著舊名字
+      room.players[clientId] = {
+        nickname,
+        avatar: cleanAvatar(msg.avatar),
+        joinedAt: known?.joinedAt ?? Date.now(),
+      };
+      // 改暱稱或換頭像時，這一輪已經寫進 buzzOrder 的紀錄要一起改，排名榜才不會留著舊的
       for (const entry of room.buzzOrder) {
-        if (entry.playerId === clientId) entry.nickname = nickname;
+        if (entry.playerId !== clientId) continue;
+        entry.nickname = nickname;
+        entry.avatar = room.players[clientId].avatar;
       }
     }
 
@@ -239,6 +245,7 @@ export class BuzzerRoom {
     room.buzzOrder.push({
       playerId: who.clientId,
       nickname: room.players[who.clientId]?.nickname ?? '',
+      avatar: room.players[who.clientId]?.avatar ?? '',
       timestamp: now,
       ms: room.buzzStartedAt ? now - room.buzzStartedAt : null,
     });
@@ -402,13 +409,29 @@ function publicState(room, online) {
     hostOnline: online.has(room.hostId),
     players: Object.entries(room.players)
       .sort((a, b) => a[1].joinedAt - b[1].joinedAt)
-      .map(([id, player]) => ({ id, nickname: player.nickname, online: online.has(id) })),
+      .map(([id, player]) => ({
+        id,
+        nickname: player.nickname,
+        avatar: player.avatar ?? '',
+        online: online.has(id),
+      })),
     buzzOrder: room.buzzOrder.map((entry) => ({
       playerId: entry.playerId,
       nickname: entry.nickname,
+      avatar: entry.avatar ?? '',
       ms: entry.ms,
     })),
   };
+}
+
+/*
+ * 頭像只存 id 字串，不在這裡驗證是不是那 10 個之一——驗證要把 app/avatars.js 整包
+ * （含 10 份 inline SVG）拉進 Worker bundle，只為了比對一個字串不划算。
+ * 客戶端拿到不認得的 id 會退回預設值。
+ */
+function cleanAvatar(value) {
+  if (typeof value !== 'string') return '';
+  return /^[a-z]{1,20}$/.test(value) ? value : '';
 }
 
 function cleanNickname(value) {

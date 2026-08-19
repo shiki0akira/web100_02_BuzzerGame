@@ -57,6 +57,7 @@ export default {
   "rulesBackToGame": "시작하기",
   "joinTitle": "방 참여",
   "nicknameLabel": "닉네임",
+  "avatarLabel": "아바타 고르기",
   "nicknamePlaceholder": "남들이 알아볼 이름이면 충분합니다",
   "enterButton": "방에 들어가기",
   "hostBadge": "진행자",

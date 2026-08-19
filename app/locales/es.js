@@ -57,6 +57,7 @@ export default {
   "rulesBackToGame": "Empezar a jugar",
   "joinTitle": "Entrar en la sala",
   "nicknameLabel": "Tu apodo",
+  "avatarLabel": "Elige un avatar",
   "nicknamePlaceholder": "Cualquiera que los demás reconozcan",
   "enterButton": "Entrar en la sala",
   "hostBadge": "Anfitrión",

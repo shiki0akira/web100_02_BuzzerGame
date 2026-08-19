@@ -985,3 +985,50 @@ textarea.field {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ---------- 頭像 ---------- */
+
+/* SVG 本身是方的，圓角在這裡切。名單與排名榜會出現幾十次，不另外包一層元素 */
+.avatar {
+  display: block;
+  flex: none;
+  border-radius: 50%;
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.avatar-option {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  transition: transform 0.12s ease;
+}
+
+.avatar-option:hover {
+  transform: scale(1.08);
+}
+
+.avatar-option[aria-checked='true'] {
+  border-color: var(--color-accent);
+}
+
+.avatar-option .avatar {
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * hidden 屬性要蓋得過自己的 display：瀏覽器預設的 [hidden]{display:none} 是 UA 樣式，
+ * 任何作者寫的 display 都贏過它。這條是替所有元件補的保險。
+ */
+[hidden] {
+  display: none !important;
+}

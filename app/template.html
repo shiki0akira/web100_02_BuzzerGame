@@ -60,6 +60,11 @@
       <section class="view" id="view-join" hidden>
         <section class="surface narrow">
           <h1 class="join-title" id="join-title">{{joinTitle}}</h1>
+
+          <!-- 10 個固定頭像，不開放上傳。按鈕由 app.js 依 window.AVATARS 產生 -->
+          <span class="field-label">{{avatarLabel}}</span>
+          <div class="avatar-picker" id="avatar-picker" role="radiogroup" aria-label="{{avatarLabel}}"></div>
+
           <label class="field-label" for="nickname">{{nicknameLabel}}</label>
           <input
             class="field"
@@ -209,6 +214,7 @@
     <script src="{{base}}/vendor/qrcode.js"></script>
     <script>
       window.T = {{stringsJson}};
+      window.AVATARS = {{avatarsJson}};
       window.BUZZER = {
         lang: '{{lang}}',
         base: '{{base}}',

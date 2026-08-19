@@ -57,6 +57,7 @@ export default {
   "rulesBackToGame": "遊んでみる",
   "joinTitle": "ルームに参加",
   "nicknameLabel": "ニックネーム",
+  "avatarLabel": "アイコンを選ぶ",
   "nicknamePlaceholder": "みんなが分かる名前でOK",
   "enterButton": "ルームに入る",
   "hostBadge": "ホスト",

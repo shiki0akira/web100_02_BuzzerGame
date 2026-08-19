@@ -57,6 +57,7 @@ export default {
   "rulesBackToGame": "开始玩",
   "joinTitle": "加入房间",
   "nicknameLabel": "你的昵称",
+  "avatarLabel": "挑一个头像",
   "nicknamePlaceholder": "大家认得出你就好",
   "enterButton": "进入房间",
   "hostBadge": "主持人",
